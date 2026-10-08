@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Need A Ride?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;700&display=swap">
@@ -43,7 +43,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 .go:active{transform:skew(-8deg) translateY(3px);box-shadow:0 2px 0 #6b4a0c}
 .howto{font-size:13px;color:#c8d2e0;letter-spacing:.04em;max-width:62ch}
 /* HUD */
-#hud{position:fixed;inset:0;pointer-events:none}
+#hud{position:fixed;left:0;right:0;top:0;height:var(--app-h,100dvh);pointer-events:none}
 #hud[hidden]{display:none}
 .hud-top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px}
 .clock{justify-self:start;background:rgba(8,26,49,.78);border:2px solid var(--gold);padding:6px 10px;border-radius:3px;text-align:left}
@@ -82,19 +82,91 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 .speedo b{font-family:var(--display);font-weight:400;font-size:44px;line-height:.9;font-variant-numeric:tabular-nums}
 .speedo i{font-style:normal;font-family:var(--display);letter-spacing:.2em;font-size:16px;margin-left:4px;color:var(--gold-hi)}
 .speedo div{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#d7deea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
-#mini{width:190px;height:190px;border-radius:50%;border:3px solid var(--gold);background:var(--navy-deep);box-shadow:0 6px 20px rgba(0,0,0,.5)}
+#mini{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:190px;height:190px;border-radius:50%;border:3px solid var(--gold);background:var(--navy-deep);box-shadow:0 6px 20px rgba(0,0,0,.5)}
 #pop{position:absolute;left:50%;top:30%;transform:translateX(-50%);text-align:center;font-family:var(--display);pointer-events:none}
 #pop div{font-size:clamp(28px,6vw,46px);letter-spacing:.06em;color:var(--gold-hi);text-shadow:0 3px 0 #000;animation:pop 1.2s ease-out forwards}
 @keyframes pop{0%{transform:scale(.5);opacity:0}15%{transform:scale(1.15);opacity:1}30%{transform:scale(1)}80%{opacity:1}100%{transform:translateY(-30px);opacity:0}}
 @media (prefers-reduced-motion:reduce){#pop div{animation:none}}
 #banner{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-family:var(--display);font-size:clamp(22px,4vw,34px);letter-spacing:.1em;background:var(--red);color:#fff;padding:4px 18px;border-radius:2px;white-space:nowrap}
 #banner[hidden]{display:none}
-/* touch */
-#touch{position:fixed;inset:auto 0 calc(env(safe-area-inset-bottom,0px) + 110px) 0;display:flex;justify-content:space-between;padding:0 12px;pointer-events:none}
+/* touch: thumb clusters pinned to the bottom corners, sized to the screen */
+#touch{position:fixed;left:0;right:0;top:0;height:var(--app-h,100dvh);pointer-events:none;--tb:clamp(54px,min(17vw,19vh),78px);-webkit-touch-callout:none}
 #touch[hidden]{display:none}
-#touch .side{display:flex;gap:10px;pointer-events:auto}
-#touch button{width:68px;height:68px;border-radius:50%;border:3px solid var(--gold);background:rgba(8,26,49,.6);color:var(--cream);font-family:var(--display);font-size:20px;letter-spacing:.05em;touch-action:none}
+#touch .tl,#touch .tr{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;gap:10px;align-items:flex-end;pointer-events:auto}
+#touch .tl{left:calc(env(safe-area-inset-left,0px) + 12px)}
+#touch .tr{right:calc(env(safe-area-inset-right,0px) + 12px);display:grid;grid-template-columns:auto auto;gap:8px 10px;justify-items:center}
+#touch button{width:var(--tb);height:var(--tb);border-radius:50%;border:3px solid var(--gold);background:rgba(8,26,49,.55);color:var(--cream);font-family:var(--display);font-size:calc(var(--tb) * .28);letter-spacing:.04em;touch-action:none;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#touch .arr{font-size:calc(var(--tb) * .32)}
+#touch .sm{width:calc(var(--tb) * .74);height:calc(var(--tb) * .74);font-size:calc(var(--tb) * .22);border-width:2px;align-self:end}
+#touch .gas{width:calc(var(--tb) * 1.14);height:calc(var(--tb) * 1.14);border-color:var(--green)}
+#touch .brk{border-color:var(--red)}
 #touch button.on{background:var(--gold);color:var(--navy-deep)}
+#touch .gas.on{background:var(--green)}
+#touch .brk.on{background:var(--red);color:#fff}
+/* phones and tablets */
+body.touch .howto{display:none}
+body.touch #endshift{display:none}
+body.touch .hud-top{left:calc(env(safe-area-inset-left,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 8px)}
+body.touch .clock{padding:4px 8px}
+body.touch .clock b{font-size:22px;white-space:nowrap}
+body.touch .clock span{white-space:nowrap}
+body.touch .clock span{font-size:10px;letter-spacing:.1em}
+body.touch .cash b{font-size:34px}
+body.touch .cash span{font-size:10px}
+body.touch .timer b{font-size:52px}
+body.touch .timer small{font-size:12px}
+body.touch #mini{width:var(--mm,104px);height:var(--mm,104px);top:calc(env(safe-area-inset-top,0px) + 66px);bottom:auto;right:calc(env(safe-area-inset-right,0px) + 10px);border-width:2px}
+body.touch .hud-btns{position:fixed;right:calc(env(safe-area-inset-right,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 66px + var(--mm,104px) + 8px);margin:0;flex-direction:column;align-items:flex-end;gap:6px}
+body.touch .hud-btns button{font-size:13px;padding:6px 8px;min-width:76px;min-height:34px}
+body.touch #phone{box-sizing:border-box;top:calc(env(safe-area-inset-top,0px) + 66px);left:calc(env(safe-area-inset-left,0px) + 10px);width:min(250px,calc(100vw - var(--mm,104px) - 34px));padding:8px 10px 10px;border-radius:13px}
+body.touch .ph-app{font-size:9px}
+body.touch .ph-meta{font-size:11px;margin-top:5px}
+body.touch .ph-btns small{display:none}
+body.touch .ph-head{font-size:19px}
+body.touch .ph-line{font-size:12px;line-height:1.25}
+body.touch .ph-btns button{font-size:21px;padding:9px 6px}
+body.touch .hud-bot{left:calc(env(safe-area-inset-left,0px) + 12px);right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 14px + var(--tb-h,78px) + 10px)}
+body.touch .speedo{padding:3px 9px}
+body.touch .speedo b{font-size:32px}
+body.touch .speedo div{font-size:11px;max-width:52vw}
+body.touch #banner{top:24%;font-size:20px}
+body.touch #pop{top:34%}
+/* compact menu on phones so DRIVE is always reachable */
+body.touch #menu{overflow-y:auto;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 14px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 14px) calc(env(safe-area-inset-left,0px) + 12px)}
+body.touch #menu .title{font-size:clamp(40px,12vw,64px)}
+body.touch #menu .sub{font-size:13px;letter-spacing:.18em}
+body.touch .panel{grid-template-columns:1fr;gap:10px;margin-top:auto}
+body.touch .group{gap:5px}
+body.touch .group h3{font-size:15px}
+body.touch .opts{gap:6px}
+body.touch .opt{font-size:17px;padding:6px 10px}
+body.touch .opt small{font-size:10px}
+body.touch .go{font-size:32px;padding:6px 40px;flex-shrink:0}
+body.touch .screen{overflow-y:auto}
+body.touch .stats b{font-size:30px}
+/* phone held sideways: one row of buttons, smaller map, compact phone card */
+@media (orientation:landscape) and (max-height:520px){
+  body.touch #touch .tr{grid-template-columns:auto auto auto auto}
+  body.touch{--mm:92px}
+  body.touch #mini{top:calc(env(safe-area-inset-top,0px) + 62px)}
+  body.touch .hud-btns{top:calc(env(safe-area-inset-top,0px) + 62px + var(--mm,92px) + 6px);flex-direction:row}
+  body.touch .hud-btns button{min-width:0}
+  body.touch #phone{top:calc(env(safe-area-inset-top,0px) + 58px);transform:scale(.82)}
+  body.touch #phone.off{transform:translateX(-20px) scale(.78)}
+  body.touch .timer b{font-size:42px}
+  body.touch .cash b{font-size:28px}
+  body.touch #menu{gap:6px;padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
+  body.touch #menu .title{font-size:40px}
+  body.touch #menu .sub{font-size:11px}
+  body.touch .panel{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  body.touch .opts{flex-direction:column;align-items:stretch}
+  body.touch .opt{font-size:15px;padding:4px 8px}
+  body.touch .opt small{display:none}
+  body.touch .go{font-size:26px;padding:4px 34px}
+  body.touch #results{gap:8px}
+  body.touch #results .title{font-size:40px!important}
+  body.touch .stars{font-size:26px}
+}
 /* results */
 #results{background:rgba(8,26,49,.9)}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:min(560px,100%)}
@@ -105,7 +177,7 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 #unlock{color:var(--green);letter-spacing:.08em}
 @media (max-width:700px){
   .panel{grid-template-columns:1fr;gap:10px}
-  #mini{width:112px;height:112px;position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 92px)}
+  #mini{width:132px;height:132px}
   .clock b{font-size:22px}
   #phone{top:calc(env(safe-area-inset-top,0px) + 86px)}
   .howto{display:none}
@@ -165,13 +237,13 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div id="pop"></div>
   <div class="hud-bot">
     <div class="speedo"><b id="mph">0</b><i>MPH</i><div id="street">Crenshaw Blvd</div></div>
-    <canvas id="mini" width="380" height="380"></canvas>
   </div>
+  <canvas id="mini" width="380" height="380"></canvas>
 </div>
 
 <div id="touch" hidden>
-  <div class="side"><button id="tb-l" aria-label="Steer left">&#9664;</button><button id="tb-r" aria-label="Steer right">&#9654;</button></div>
-  <div class="side"><button id="tb-hop">HOP</button><button id="tb-slide">SLIDE</button><button id="tb-brake">BRAKE</button><button id="tb-gas">GAS</button></div>
+  <div class="tl"><button id="tb-l" class="arr" data-k="l" aria-label="Steer left">&#9664;</button><button id="tb-r" class="arr" data-k="r" aria-label="Steer right">&#9654;</button></div>
+  <div class="tr"><button id="tb-hop" class="sm" data-k="hop">HOP</button><button id="tb-slide" class="sm" data-k="slide">SLIDE</button><button id="tb-brake" class="brk" data-k="brake">BRAKE</button><button id="tb-gas" class="gas" data-k="gas">GAS</button></div>
 </div>
 
 <div id="results" class="screen" hidden>
@@ -244,7 +316,12 @@ renderer.shadowMap.enabled = !IS_TOUCH;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(62, 1, 0.5, 1700);
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+function resize() {
+  const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  document.documentElement.style.setProperty('--app-h', h + 'px');
+  const tr = document.querySelector('#touch .tr'); if (tr && tr.offsetHeight) document.documentElement.style.setProperty('--tb-h', tr.offsetHeight + 'px');
+}
+if (window.visualViewport) visualViewport.addEventListener('resize', () => resize());
 addEventListener('resize', resize); resize();
 
 const hemi = new THREE.HemisphereLight(0xcfe4ff, 0x8a7a5a, 0.75); scene.add(hemi);
@@ -498,6 +575,7 @@ function buildAtlas(words) {
   drawMarket(C.market, rnd, 'MARKET ST'); drawMarket(C.market + 1, rnd, 'BOUTIQUE');
   drawApts(C.aptSide, rnd, false);
   { const [x, y] = cellXY(C.upper); ax.fillStyle = '#f2efe8'; ax.fillRect(x, y, CELL, CELL); noise(ax, x, y, CELL, CELL, 1400, .1, rnd); for (let c = 0; c < 3; c++) { ax.fillStyle = '#34495e'; ax.fillRect(x + 22 + c * 80, y + 80, 52, 90); ex.fillStyle = rnd() < .5 ? '#ffcf7a' : '#000'; ex.fillRect(x + 22 + c * 80, y + 80, 52, 90); } }
+  skinAtlas();
 }
 function texFromCanvas(c, rep) { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
 function roadTex(kind) {
@@ -573,6 +651,292 @@ function muralTex() {
   g.fillStyle = '#333'; for (const wx of [1330, 1570]) { g.beginPath(); g.arc(wx, 348, 24, 0, 7); g.fill(); g.fillStyle = '#ddd'; g.beginPath(); g.arc(wx, 348, 13, 0, 7); g.fill(); g.fillStyle = '#333'; }
   noise(g, 0, 0, 2048, 384, 6000, .1, rnd);
   return texFromCanvas(c);
+}
+
+/* ---------------- skins: vehicles, people, trees, facade detail (original art, drawn here) ---------------- */
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+// "print" layer: anything drawn on q keeps its own colour; everything else takes the car's / person's tint
+function printLayer(c) { const [pc, q] = cnv(c.width, c.height); return [pc, q]; }
+function mergePrint(c, pc) {
+  const g = c.getContext('2d'), a = g.getImageData(0, 0, c.width, c.height), b = pc.getContext('2d').getImageData(0, 0, c.width, c.height), A = a.data, B = b.data;
+  for (let i = 0; i < A.length; i += 4) { const pa = B[i + 3] / 255; if (pa > .02) { A[i] = A[i] * (1 - pa) + B[i] * pa; A[i + 1] = A[i + 1] * (1 - pa) + B[i + 1] * pa; A[i + 2] = A[i + 2] * (1 - pa) + B[i + 2] * pa; A[i + 3] = 128; } }
+  g.putImageData(a, 0, 0);
+}
+function skinMat(map, ustep, extra = {}) {
+  const m = new THREE.MeshLambertMaterial(Object.assign({ map }, extra));
+  m.onBeforeCompile = sh => {
+    if (ustep) sh.vertexShader = 'attribute float aVar;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n  vUv.x += aVar * ' + ustep.toFixed(4) + ';');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '#ifdef USE_COLOR\n  diffuseColor.rgb *= mix(vec3(1.0), vColor, step(.75, texelColor.a));\n#endif\n  diffuseColor.a = 1.0;');
+  };
+  m.customProgramCacheKey = () => 'skin' + ustep;
+  return m;
+}
+function rrect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath(); }
+function plateText(g, x, y, w, h, txt) {
+  g.fillStyle = '#f4f4f0'; rrect(g, x, y, w, h, 4); g.fill(); g.strokeStyle = '#2a3a6a'; g.lineWidth = 2; g.stroke();
+  g.fillStyle = '#c0392b'; g.font = FONT2(Math.round(h * .22), 500); g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText('CALIFORNIA', x + w / 2, y + 2);
+  g.fillStyle = '#1d2a5a'; g.textBaseline = 'middle'; fitText(g, txt, x + w / 2, y + h * .62, w - 10, Math.round(h * .55), FONT);
+}
+
+/* traffic / bus atlas: 4 x 2 cells, drawn near-white so each car's paint tints it */
+const VC = { plain: 0, side: 1, front: 2, rear: 3, busSide: 4, busWind: 5, glass: 6, wheel: 7 };
+let vehTex = null;
+function vehicleAtlas() {
+  if (vehTex) return vehTex;
+  const [c, g] = cnv(1024, 512), [pc, q] = printLayer(c), rnd = mulberry32(77), at = i => [(i % 4) * 256, Math.floor(i / 4) * 256];
+  let [x, y] = at(VC.plain); g.fillStyle = '#fff'; g.fillRect(x, y, 256, 256); noise(g, x, y, 256, 256, 300, .05, rnd);
+  // car side: rounded shading, character line, door seams + handles, wheel arches, rocker
+  [x, y] = at(VC.side);
+  let gr = g.createLinearGradient(0, y, 0, y + 256); gr.addColorStop(0, '#ffffff'); gr.addColorStop(.35, '#f2f2f2'); gr.addColorStop(.7, '#d9d9d9'); gr.addColorStop(1, '#a8a8a8');
+  g.fillStyle = gr; g.fillRect(x, y, 256, 256);
+  g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(x, y + 70, 256, 10); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x, y + 80, 256, 5);
+  g.fillStyle = 'rgba(0,0,0,.45)'; for (const u of [.36, .63]) g.fillRect(x + u * 256, y, 3, 200);
+  g.fillStyle = 'rgba(0,0,0,.6)'; for (const u of [.40, .67]) rrect(g, x + u * 256, y + 34, 18, 14, 4), g.fill();
+  g.fillStyle = '#2a2a2a'; g.fillRect(x, y + 214, 256, 42);
+  g.fillStyle = '#111'; for (const u of [.178, .822]) { g.beginPath(); g.ellipse(x + u * 256, y + 256, 32, 150, 0, Math.PI, 0); g.fill(); }
+  // car front: grille, bumper, plate
+  [x, y] = at(VC.front); g.fillStyle = '#efefef'; g.fillRect(x, y, 256, 256); g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x, y, 256, 40);
+  g.fillStyle = '#1e1e1e'; rrect(g, x + 64, y + 96, 128, 64, 10); g.fill(); g.strokeStyle = '#9a9a9a'; g.lineWidth = 3; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(x + 70, y + 104 + k * 10); g.lineTo(x + 186, y + 104 + k * 10); g.stroke(); }
+  g.fillStyle = '#2b2b2b'; g.fillRect(x, y + 190, 256, 66); plateText(q, x + 92, y + 196, 72, 40, '8NSR' + Math.floor(100 + rnd() * 899));
+  // car rear: trunk seam, bumper, plate
+  [x, y] = at(VC.rear); g.fillStyle = '#efefef'; g.fillRect(x, y, 256, 256); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x + 20, y + 40, 216, 3);
+  g.fillStyle = '#2b2b2b'; g.fillRect(x, y + 186, 256, 70); plateText(q, x + 86, y + 120, 84, 50, '7DBN' + Math.floor(100 + rnd() * 899));
+  // bus side: panel seams, wheel arches, ad panel
+  [x, y] = at(VC.busSide); gr = g.createLinearGradient(0, y, 0, y + 256); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#cfcfcf'); g.fillStyle = gr; g.fillRect(x, y, 256, 256);
+  g.fillStyle = 'rgba(0,0,0,.18)'; for (let k = 1; k < 8; k++) g.fillRect(x + k * 32, y, 2, 256);
+  g.fillStyle = '#111'; for (const u of [.17, .82]) { g.beginPath(); g.ellipse(x + u * 256, y + 256, 16, 60, 0, Math.PI, 0); g.fill(); }
+  q.fillStyle = '#0D2B4F'; q.fillRect(x + 60, y + 131, 136, 44); q.fillStyle = '#f2c14e'; q.textAlign = 'center'; q.textBaseline = 'middle'; fitText(q, 'NORTH STAR', x + 128, y + 146, 126, 22); q.fillStyle = '#F3E9D2'; fitText(q, 'THE ALBUM · DO BETTER', x + 128, y + 165, 126, 13);
+  // bus windshield + destination sign (the sign is the part that glows)
+  [x, y] = at(VC.busWind); g.fillStyle = '#1b2733'; g.fillRect(x, y, 256, 256);
+  gr = g.createLinearGradient(x, y + 60, x + 256, y + 256); gr.addColorStop(0, 'rgba(255,255,255,.25)'); gr.addColorStop(.5, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x, y + 56, 256, 200);
+  g.fillStyle = '#080808'; g.fillRect(x + 8, y + 8, 240, 46); g.fillStyle = '#ffb21e'; g.font = FONT(36); g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, '210  CRENSHAW', x + 128, y + 32, 228, 36);
+  g.fillStyle = '#333'; g.fillRect(x + 126, y + 56, 4, 200);
+  q.drawImage(c, at(VC.busWind)[0], 256 * 1, 256, 256, at(VC.busWind)[0], 256, 256, 256);
+  // glass: pillars + reflection streak (tinted by the glass vertex colour)
+  [x, y] = at(VC.glass); g.fillStyle = '#d8dee6'; g.fillRect(x, y, 256, 256);
+  gr = g.createLinearGradient(x, y, x + 256, y + 256); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.45, 'rgba(255,255,255,.9)'); gr.addColorStop(.55, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x, y, 256, 256);
+  g.fillStyle = '#222'; g.fillRect(x, y, 10, 256); g.fillRect(x + 246, y, 10, 256); g.fillRect(x + 122, y, 12, 256); g.fillRect(x, y, 256, 8);
+  // wheel: tyre with a silver rim
+  [x, y] = at(VC.wheel); g.fillStyle = '#141414'; g.fillRect(x, y, 256, 256);
+  g.fillStyle = '#c9c9c9'; g.beginPath(); g.arc(x + 128, y + 128, 74, 0, 7); g.fill(); g.fillStyle = '#7d7d7d'; for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; g.beginPath(); g.ellipse(x + 128 + Math.cos(a) * 44, y + 128 + Math.sin(a) * 44, 16, 22, a, 0, 7); g.fill(); }
+  g.fillStyle = '#eee'; g.beginPath(); g.arc(x + 128, y + 128, 16, 0, 7); g.fill();
+  q.drawImage(c, x, y, 256, 256, x, y, 256, 256);
+  mergePrint(c, pc); vehTex = texFromCanvas(c); return vehTex;
+}
+// per-face cells for a box: [px, nx, py, ny, pz, nz]
+const VFACES = {
+  body: [VC.side, VC.side, VC.plain, VC.plain, VC.front, VC.rear],
+  bus: [VC.busSide, VC.busSide, VC.plain, VC.plain, VC.plain, VC.plain],
+  busWind: [VC.plain, VC.plain, VC.plain, VC.plain, VC.busWind, VC.plain],
+  glass: [VC.glass, VC.glass, VC.plain, VC.plain, VC.glass, VC.glass],
+  wheel: [VC.wheel, VC.wheel, VC.wheel, VC.wheel, VC.wheel, VC.wheel]
+};
+function faceUV(uvArr, base, cells) {
+  for (let f = 0; f < 6; f++) {
+    const c = cells ? cells[f] : VC.plain, cx = c % 4, cy = Math.floor(c / 4);
+    for (let k = 0; k < 4; k++) { const i = (base + f * 4 + k) * 2, u = uvArr[i], v = uvArr[i + 1]; uvArr[i] = (cx + .01 + u * .98) / 4; uvArr[i + 1] = 1 - (cy + 1) / 2 + (.01 + v * .98) / 2; }
+  }
+}
+
+/* player cars: per-face paint jobs */
+function paintJob(type) {
+  const side = cnv(1024, 128), top = cnv(256, 512), front = cnv(256, 128), rear = cnv(256, 128), rnd = mulberry32(type.length * 31);
+  const base = type === 'low' ? ['#7a2a96', '#5a1670', '#2e0a3c'] : type === 'bmr' ? ['#3a3a40', '#0b0b0d', '#000'] : ['#6a7078', '#3a3f45', '#1c1f22'];
+  for (const [c, g] of [side, top]) {
+    const gr = g.createLinearGradient(0, 0, 0, c.height); gr.addColorStop(0, base[0]); gr.addColorStop(.45, base[1]); gr.addColorStop(1, base[2]); g.fillStyle = gr; g.fillRect(0, 0, c.width, c.height);
+    if (type === 'low') for (let i = 0; i < c.width * c.height / 60; i++) { g.fillStyle = `rgba(255,${200 + rnd() * 55 | 0},255,${rnd() * .35})`; g.fillRect(rnd() * c.width, rnd() * c.height, 1.5, 1.5); }
+  }
+  { // side
+    const [c, g] = side, W = c.width;
+    g.fillStyle = 'rgba(255,255,255,.28)'; g.fillRect(0, 10, W, 6);
+    if (type === 'low') {
+      g.strokeStyle = '#f2c14e'; g.lineWidth = 3; g.beginPath(); g.moveTo(60, 40); g.bezierCurveTo(300, 30, 700, 50, 964, 40); g.stroke();
+      for (const sx of [80, 944]) { const d = sx < 500 ? 1 : -1; g.beginPath(); for (let k = 0; k < 3; k++) { g.moveTo(sx, 40); g.bezierCurveTo(sx + d * 40, 10 + k * 14, sx + d * 90, 70 - k * 10, sx + d * (120 + k * 30), 46); } g.stroke(); }
+      g.fillStyle = '#e8e8e8'; g.fillRect(0, 96, W, 8);
+    } else if (type === 'bmr') { g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 52, W, 3); g.fillStyle = '#c9c9c9'; g.fillRect(0, 0, W, 4); }
+    else { g.fillStyle = '#151515'; g.fillRect(0, 90, W, 38); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(0, 50, W, 4); }
+    g.fillStyle = 'rgba(0,0,0,.55)'; for (const u of [.34, .58]) g.fillRect(u * W, 0, 3, 110);
+    g.fillStyle = type === 'bmr' ? '#555' : '#d0d0d0'; for (const u of [.38, .62]) { rrect(g, u * W, 22, 44, 9, 4); g.fill(); }
+    // side marker lights
+    g.fillStyle = '#e8902a'; g.fillRect(20, 30, 20, 8); g.fillStyle = '#b01818'; g.fillRect(W - 40, 30, 20, 8);
+  }
+  { // hood + trunk + roof (top face, front of car at v=0 of the canvas -> runs along the length)
+    const [c, g] = top;
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(118, 0, 20, 512);
+    if (type === 'low') { g.strokeStyle = '#f2c14e'; g.lineWidth = 3; for (const s of [-1, 1]) { g.beginPath(); g.moveTo(128 + s * 20, 472); g.bezierCurveTo(128 + s * 90, 422, 128 + s * 40, 372, 128 + s * 70, 322); g.stroke(); } }
+    if (type === 'suv') { g.fillStyle = '#111'; g.fillRect(96, 382, 64, 70); g.fillStyle = '#333'; for (let k = 0; k < 6; k++) g.fillRect(100, 388 + k * 10, 56, 4); }
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 168, 256, 3); g.fillRect(0, 380, 256, 3);
+  }
+  { // front: grille between the headlights, bumper
+    const [c, g] = front; g.fillStyle = base[1]; g.fillRect(0, 0, 256, 128);
+    if (type === 'low') { g.fillStyle = '#e8e8e8'; g.fillRect(40, 28, 176, 60); g.fillStyle = '#9a9a9a'; for (let k = 0; k < 20; k++) g.fillRect(44 + k * 8.6, 32, 3, 52); g.fillStyle = '#ddd'; g.fillRect(0, 100, 256, 28); }
+    else if (type === 'bmr') { g.fillStyle = '#0e0e0e'; rrect(g, 70, 24, 116, 46, 10); g.fill(); g.strokeStyle = '#d4a632'; g.lineWidth = 3; g.stroke(); g.fillStyle = '#2a2a2a'; for (let k = 0; k < 12; k++) g.fillRect(76 + k * 9.4, 28, 3, 38); g.fillStyle = '#111'; g.fillRect(30, 92, 196, 22); }
+    else { g.fillStyle = '#0c0c0c'; rrect(g, 30, 16, 196, 64, 6); g.fill(); g.strokeStyle = '#444'; g.lineWidth = 2; for (let gx = 36; gx < 222; gx += 12) for (let gy = 22; gy < 76; gy += 10) g.strokeRect(gx, gy, 8, 6); g.fillStyle = '#151515'; g.fillRect(0, 96, 256, 32); }
+    plateText(g, 98, 86, 60, 32, type === 'low' ? 'NSTAR' : type === 'bmr' ? 'DOBETTR' : 'NEEDRD');
+  }
+  { // rear
+    const [c, g] = rear; g.fillStyle = base[1]; g.fillRect(0, 0, 256, 128); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(16, 18, 224, 3);
+    g.fillStyle = type === 'low' ? '#e8e8e8' : '#151515'; g.fillRect(0, 104, 256, 24);
+    plateText(g, 92, 52, 72, 40, type === 'low' ? 'NSTAR' : type === 'bmr' ? 'DOBETTR' : 'NEEDRD');
+  }
+  const T = ([c]) => texFromCanvas(c), sh = type === 'suv' ? 40 : 110, spec = type === 'suv' ? 0x444444 : 0x888888;
+  const M = t => new THREE.MeshPhongMaterial({ map: t, shininess: sh, specular: spec });
+  const st = T(side), st2 = st.clone(); st2.needsUpdate = true; st2.wrapS = THREE.RepeatWrapping; st2.repeat.x = -1; st2.offset.x = 1;
+  const sideM = M(st), sideL = M(st2), topM = M(T(top)), frontM = M(T(front)), rearM = M(T(rear));
+  return [sideM, sideL, topM, topM, frontM, rearM];
+}
+// Box top face: canvas top row = tail, bottom row = nose. Side canvas x=0 = nose on the right side (mirrored copy on the left).
+
+/* police: black-and-white with POLICE on the doors (generic, no real department marks) */
+let copDoorMat = null;
+function copDoorMaterial() {
+  if (copDoorMat) return copDoorMat;
+  const [c, g] = cnv(512, 128); g.fillStyle = '#f4f4f4'; g.fillRect(0, 0, 512, 128);
+  g.fillStyle = '#0D2B4F'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = FONT(64); g.fillText('POLICE', 256, 70);
+  g.fillStyle = '#c9972b'; g.save(); g.translate(70, 64); g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 12 : 28, a = k / 10 * Math.PI * 2 - Math.PI / 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill(); g.restore();
+  g.fillStyle = '#111'; g.font = FONT(28); g.fillText('UNIT 23', 440, 70); g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(250, 0, 3, 128);
+  const t = texFromCanvas(c), white = new THREE.MeshLambertMaterial({ color: 0xf4f4f4 }), side = new THREE.MeshLambertMaterial({ map: t });
+  copDoorMat = [side, side, white, white, white, white]; return copDoorMat;
+}
+
+/* people: shirt / face variants picked per person through an instanced attribute */
+function pedTextures() {
+  const shirt = cnv(512, 256), face = cnv(512, 256), legs = cnv(128, 256), rnd = mulberry32(12), sp = printLayer(shirt[0]), fp = printLayer(face[0]), lp = printLayer(legs[0]);
+  { // 4 columns: tee, hoodie, jersey, star graphic tee. Top half = front, bottom half = back/sides.
+    const [c, g] = shirt, q = sp[1]; g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 256);
+    for (let v = 0; v < 4; v++) {
+      const x = v * 128;
+      g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(x, 112, 128, 16); g.fillRect(x, 240, 128, 16);
+      if (v === 0) { g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x + 64, 0, 22, 14, 0, 0, Math.PI); g.fill(); }
+      if (v === 1) { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(x + 64, 2, 34, 20, 0, 0, Math.PI); g.fill(); g.fillRect(x + 30, 72, 68, 34); q.fillStyle = '#f4f4f4'; q.fillRect(x + 54, 18, 3, 30); q.fillRect(x + 71, 18, 3, 30); g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(x + 64, 128, 40, 30, 0, Math.PI, 0); g.fill(); }
+      if (v === 2) { g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.moveTo(x + 40, 0); g.lineTo(x + 64, 22); g.lineTo(x + 88, 0); g.fill(); q.fillStyle = '#f4f4f4'; q.strokeStyle = '#1b1b1b'; q.lineWidth = 3; q.font = FONT(56); q.textAlign = 'center'; q.textBaseline = 'middle'; q.strokeText('23', x + 64, 70); q.fillText('23', x + 64, 70); q.strokeText('23', x + 64, 196); q.fillText('23', x + 64, 196); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(x, 0, 10, 128); g.fillRect(x + 118, 0, 10, 128); }
+      if (v === 3) { g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x + 64, 0, 22, 14, 0, 0, Math.PI); g.fill(); q.save(); q.translate(x + 64, 58); q.fillStyle = '#e0a93a'; for (let k = 0; k < 4; k++) { q.rotate(Math.PI / 2); q.beginPath(); q.moveTo(0, -30); q.lineTo(7, 0); q.lineTo(-7, 0); q.fill(); } q.restore(); q.fillStyle = '#F3E9D2'; q.font = FONT(16); q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText('NORTH STAR', x + 64, 104); }
+    }
+  }
+  { // heads: columns = fade, locs, cap, bun. Rows: front (0-128), side (128-192), back/top (192-256)
+    const [c, g] = face, q = fp[1]; g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 256);
+    for (let v = 0; v < 4; v++) {
+      const x = v * 128, hair = '#1a1410';
+      g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x + 22, 66, 84, 6);
+      q.fillStyle = '#f2ece2'; q.fillRect(x + 30, 50, 22, 12); q.fillRect(x + 76, 50, 22, 12); q.fillStyle = '#20140c'; q.fillRect(x + 37, 51, 10, 10); q.fillRect(x + 83, 51, 10, 10);
+      q.fillStyle = hair; q.fillRect(x + 28, 42, 26, 5); q.fillRect(x + 74, 42, 26, 5);
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x + 58, 60, 12, 24); g.fillStyle = 'rgba(90,30,30,.55)'; g.fillRect(x + 46, 96, 36, 8);
+      const g0 = g; { const g = q; g.fillStyle = hair;
+      if (v === 0) { g.fillRect(x, 0, 128, 26); g.fillRect(x, 128, 128, 22); g.fillRect(x, 192, 128, 64); }
+      if (v === 1) { g.fillRect(x, 0, 128, 30); g.fillRect(x, 0, 16, 128); g.fillRect(x + 112, 0, 16, 128); g.fillRect(x, 128, 128, 64); g.fillRect(x, 192, 128, 64); g.fillStyle = '#3a2a1c'; for (let k = 0; k < 16; k++) g.fillRect(x + k * 8, 128, 2, 128); }
+      if (v === 2) { const cap = ['#c0392b', '#0D2B4F', '#1b1b1b', '#1e7a46'][Math.floor(rnd() * 4)]; g.fillStyle = cap; g.fillRect(x, 0, 128, 34); g.fillRect(x, 128, 128, 30); g.fillRect(x, 192, 128, 64); g.fillStyle = '#f2c14e'; g.font = FONT(22); g.textAlign = 'center'; g.fillText('LA', x + 64, 18); }
+      if (v === 3) { g.fillRect(x, 0, 128, 24); g.fillRect(x, 128, 128, 26); g.fillRect(x, 192, 128, 64); g.beginPath(); g.arc(x + 64, 222, 26, 0, 7); g.fill(); }
+      }
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 54, 160, 20, 20);
+    }
+  }
+  { // legs: jeans seam, pocket, shoes
+    const [c, g] = legs, q = lp[1]; g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 256);
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(60, 0, 4, 220); g.fillRect(0, 0, 128, 10); g.fillStyle = 'rgba(255,255,255,.4)'; for (let k = 0; k < 400; k++) g.fillRect(rnd() * 128, rnd() * 220, 1, 3);
+    q.fillStyle = ['#1a1a1a', '#f2f2f2'][0]; q.fillRect(0, 226, 128, 30); q.fillStyle = '#efefef'; q.fillRect(0, 244, 128, 12); q.fillStyle = '#c0392b'; q.fillRect(40, 232, 48, 6);
+  }
+  mergePrint(shirt[0], sp[0]); mergePrint(face[0], fp[0]); mergePrint(legs[0], lp[0]);
+  return { shirt: texFromCanvas(shirt[0]), face: texFromCanvas(face[0]), legs: texFromCanvas(legs[0]) };
+}
+// box uv remap: each face -> [u0,v0,u1,v1]
+function remapBoxUV(geo, rects) {
+  const uv = geo.attributes.uv.array;
+  for (let f = 0; f < 6; f++) { const r = rects[f]; for (let k = 0; k < 4; k++) { const i = (f * 4 + k) * 2; uv[i] = r[0] + uv[i] * (r[2] - r[0]); uv[i + 1] = r[1] + uv[i + 1] * (r[3] - r[1]); } }
+  geo.attributes.uv.needsUpdate = true;
+}
+
+/* trees: leafy canopy, bark, better palm fronds */
+function leafTex() {
+  const [c, g] = cnv(256, 256), rnd = mulberry32(8); g.fillStyle = '#c8d8c0'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++) { const x = rnd() * 256, y = rnd() * 256, r = 3 + rnd() * 9, l = 150 + rnd() * 105 | 0; g.fillStyle = `rgb(${l * .82 | 0},${l},${l * .7 | 0})`; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.arc(x + r * .4, y + r * .4, r * .5, 0, 7); g.fill(); }
+  const t = texFromCanvas(c, true); return t;
+}
+function barkTex() {
+  const [c, g] = cnv(64, 128), rnd = mulberry32(9); g.fillStyle = '#8a6a4a'; g.fillRect(0, 0, 64, 128);
+  for (let y = 0; y < 128; y += 8) { g.fillStyle = 'rgba(40,25,10,.45)'; g.fillRect(0, y, 64, 2); for (let x = 0; x < 64; x += 8) { g.fillStyle = `rgba(255,230,200,${rnd() * .18})`; g.fillRect(x + (y % 16 ? 4 : 0), y + 2, 5, 5); } }
+  const t = texFromCanvas(c, true); return t;
+}
+function frondTex2() {
+  const [c, g] = cnv(128, 256), rnd = mulberry32(10);
+  g.strokeStyle = '#6b4a24'; g.lineWidth = 4; g.beginPath(); g.moveTo(64, 0); g.lineTo(64, 256); g.stroke();
+  for (let y = 6; y < 250; y += 4) {
+    const w = 58 * Math.sin(y / 256 * Math.PI) + 6, l = 70 + rnd() * 50 | 0;
+    g.strokeStyle = `rgb(${l * .55 | 0},${l + 40},${l * .4 | 0})`; g.lineWidth = 2.6;
+    g.beginPath(); g.moveTo(64, y); g.quadraticCurveTo(64 - w * .6, y + 4, 64 - w, y + 18 + rnd() * 6); g.moveTo(64, y); g.quadraticCurveTo(64 + w * .6, y + 4, 64 + w, y + 18 + rnd() * 6); g.stroke();
+  }
+  return texFromCanvas(c);
+}
+
+/* building facades: weathering + extra detail drawn over the base atlas cells */
+function weatherCell(i, rnd, opt = {}) {
+  const [x, y] = cellXY(i), g = ax, W = CELL;
+  // roofline cap + shadow under it
+  if (!opt.noCap) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(x, y, W, 7); g.fillStyle = 'rgba(255,255,255,.22)'; g.fillRect(x, y + 7, W, 3); g.fillStyle = 'rgba(0,0,0,.1)'; g.fillRect(x, y + 10, W, 8); }
+  // grime at the base and rain streaks
+  const gr = g.createLinearGradient(0, y + W - 46, 0, y + W); gr.addColorStop(0, 'rgba(50,40,30,0)'); gr.addColorStop(1, 'rgba(50,40,30,.32)'); g.fillStyle = gr; g.fillRect(x, y + W - 46, W, 46);
+  for (let k = 0; k < (opt.streaks || 4); k++) { const sx = x + rnd() * W, sl = 20 + rnd() * 70; const s2 = g.createLinearGradient(0, y + 12, 0, y + 12 + sl); s2.addColorStop(0, 'rgba(40,35,30,.16)'); s2.addColorStop(1, 'rgba(40,35,30,0)'); g.fillStyle = s2; g.fillRect(sx, y + 12, 3 + rnd() * 6, sl); }
+}
+function detailStore(i, rnd) {
+  const [x, y] = cellXY(i), g = ax;
+  // lit box sign frame
+  g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 3; g.strokeRect(x + 10, y + 46, CELL - 20, 62);
+  g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x + 12, y + 48, CELL - 24, 6);
+  // pilasters
+  g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x, y + 112, 10, 144); g.fillRect(x + CELL - 10, y + 112, 10, 144);
+  // window shelves with goods
+  for (const wx of [14, 156]) for (let s = 0; s < 3; s++) { const sy = y + 170 + s * 22; g.fillStyle = 'rgba(200,200,200,.35)'; g.fillRect(x + wx + 4, sy, 78, 2); for (let k = 0; k < 9; k++) { g.fillStyle = `hsla(${rnd() * 360},55%,55%,.55)`; g.fillRect(x + wx + 6 + k * 8.5, sy - 6 - rnd() * 8, 6, 6 + rnd() * 8); } }
+  // door handle + kick plate
+  g.fillStyle = '#c8c8c8'; g.fillRect(x + 140, y + 186, 3, 18); g.fillStyle = 'rgba(160,160,160,.6)'; g.fillRect(x + 108, y + 224, 40, 14);
+  // OPEN neon (glows at night)
+  if (rnd() < .6) { const ox = x + 20 + rnd() * 50, oy = y + 140; g.fillStyle = '#c0392b'; g.font = FONT2(13); g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText('OPEN', ox, oy); ex.fillStyle = '#ff4d4d'; ex.font = g.font; ex.textAlign = 'left'; ex.textBaseline = 'top'; ex.fillText('OPEN', ox, oy); }
+  // security gate box above windows
+  g.fillStyle = 'rgba(90,90,90,.7)'; g.fillRect(x + 14, y + 128, 86, 6); g.fillRect(x + 156, y + 128, 86, 6);
+}
+function detailHouse(i, rnd) {
+  const [x, y] = cellXY(i), g = ax;
+  for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(${rnd() < .5 ? '0,0,0' : '255,255,255'},${rnd() * .05})`; g.beginPath(); g.arc(x + rnd() * CELL, y + rnd() * CELL, 6 + rnd() * 22, 0, 7); g.fill(); }
+  g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x, y, CELL, 22);
+  // bushes along the base
+  for (let k = 0; k < 9; k++) { const bx = x + rnd() * CELL, r = 10 + rnd() * 14; g.fillStyle = ['#3d6b2e', '#4f7f34', '#2f5e2a', '#6b8f3c'][k % 4]; g.beginPath(); g.arc(bx, y + CELL - 4, r, Math.PI, 0); g.fill(); }
+  // porch light + house number
+  g.fillStyle = '#d9c27a'; g.fillRect(x + 92, y + 124, 8, 12); ex.fillStyle = '#ffd88a'; ex.fillRect(x + 90, y + 122, 12, 16);
+  g.fillStyle = '#1d1d1d'; g.font = FONT2(14); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(1000 + Math.floor(rnd() * 8000)), x + 128, y + 128);
+  // window AC unit on some houses
+  if (rnd() < .4) { g.fillStyle = '#d8d8d2'; g.fillRect(x + 36, y + 150, 34, 20); g.fillStyle = '#9a9a94'; for (let k = 0; k < 5; k++) g.fillRect(x + 38 + k * 6, y + 152, 3, 16); }
+}
+function detailApts(i, rnd, office) {
+  const [x, y] = cellXY(i), g = ax, W = CELL, rows = office ? 6 : 3, cols = office ? 6 : 4;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const wx = x + 12 + c * (W - 24) / cols, wy = y + 14 + r * (W - 28) / rows, ww = (W - 24) / cols - 10, wh = (W - 28) / rows - 12;
+    if (office) { const gr = g.createLinearGradient(wx, wy, wx + ww, wy + wh); gr.addColorStop(0, 'rgba(200,225,255,.35)'); gr.addColorStop(1, 'rgba(200,225,255,0)'); g.fillStyle = gr; g.fillRect(wx, wy, ww, wh); continue; }
+    // blinds / curtains
+    if (rnd() < .6) { g.fillStyle = ['#e9dcc0', '#c97a5a', '#7a9cc0', '#f2efe6', '#b56b8a'][Math.floor(rnd() * 5)]; g.fillRect(wx + 2, wy + 2, ww - 4, wh * (.3 + rnd() * .5)); }
+    if (rnd() < .3) { g.fillStyle = '#d8d8d2'; g.fillRect(wx + ww * .2, wy + wh - 14, ww * .5, 12); }
+    if (r > 0 && c % 2 === 0 && rnd() < .5) { g.fillStyle = 'rgba(30,30,30,.85)'; g.fillRect(wx - 6, wy + wh - 18, ww * 2 + 12, 3); for (let k = 0; k < 14; k++) g.fillRect(wx - 6 + k * (ww * 2 + 12) / 13, wy + wh - 18, 2, 18); }
+  }
+}
+function detailRoof(i, rnd) {
+  const [x, y] = cellXY(i), g = ax;
+  for (let k = 0; k < 3; k++) { const bx = x + 20 + rnd() * 190, by = y + 20 + rnd() * 190; g.fillStyle = '#b8b8b2'; g.fillRect(bx, by, 34, 26); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(bx + 34, by + 4, 6, 26); g.fillStyle = '#7a7a76'; g.beginPath(); g.arc(bx + 17, by + 13, 9, 0, 7); g.fill(); }
+  for (let k = 0; k < 4; k++) { g.fillStyle = '#6a6a66'; g.beginPath(); g.arc(x + rnd() * 240, y + rnd() * 240, 4, 0, 7); g.fill(); }
+}
+function skinAtlas() {
+  const rnd = mulberry32(99);
+  for (let i = 0; i < 48; i++) { if (i === C.church) { weatherCell(i, rnd); continue; } detailStore(i, rnd); weatherCell(i, rnd); }
+  for (let i = 0; i < 6; i++) { detailHouse(C.house + i, rnd); weatherCell(C.house + i, rnd, { noCap: true, streaks: 2 }); }
+  detailApts(C.apt, rnd, false); detailApts(C.apt + 1, rnd, false); detailApts(C.aptSide, rnd, false); detailApts(C.office, rnd, true);
+  for (const k of [C.apt, C.apt + 1, C.aptSide, C.office, C.stucco, C.brick, C.block, C.concrete, C.warehouse, C.school, C.garage, C.rollup, C.market, C.market + 1, C.upper]) weatherCell(k, rnd);
+  for (let k = 0; k < 8; k++) weatherCell(C.graffiti + k, rnd, { streaks: 6 });
+  detailRoof(C.gravel, rnd);
+}
+
+function driverFaceMat(def) {
+  const [c, g] = cnv(64, 64); g.fillStyle = '#' + new THREE.Color(def.skin).getHexString(); g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#' + new THREE.Color(def.hair).getHexString(); g.fillRect(0, 0, 64, 9); g.fillRect(9, 20, 16, 3); g.fillRect(39, 20, 16, 3);
+  g.fillStyle = '#f2ece2'; g.fillRect(12, 25, 11, 6); g.fillRect(41, 25, 11, 6); g.fillStyle = '#20140c'; g.fillRect(15, 25, 5, 6); g.fillRect(44, 25, 5, 6);
+  g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(29, 30, 6, 12); g.fillStyle = def.bun ? '#9a3a4a' : 'rgba(70,25,25,.6)'; g.fillRect(23, 48, 18, 4);
+  const skin = new THREE.MeshLambertMaterial({ color: def.skin }), face = new THREE.MeshLambertMaterial({ map: texFromCanvas(c) });
+  return [skin, skin, skin, skin, face, skin];
 }
 
 /* ---------------- geometry builder ---------------- */
@@ -651,9 +1015,10 @@ function makeMaterials() {
   roadMats.wall = new THREE.MeshLambertMaterial({ color: 0xbab5ab, side: THREE.DoubleSide });
   lampHeadMat = new THREE.MeshLambertMaterial({ color: 0xdddddd, emissive: 0xffd58a, emissiveIntensity: 0 });
   poleMat = new THREE.MeshLambertMaterial({ color: 0x7d8086 });
-  palmTrunkMat = new THREE.MeshLambertMaterial({ color: 0x8a6a4a });
-  palmCrownMat = new THREE.MeshLambertMaterial({ map: frondTex(), alphaTest: .5, side: THREE.DoubleSide });
-  treeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const bark = barkTex(); bark.repeat.set(1, 8);
+  palmTrunkMat = new THREE.MeshLambertMaterial({ map: bark });
+  palmCrownMat = new THREE.MeshLambertMaterial({ map: frondTex2(), alphaTest: .45, side: THREE.DoubleSide });
+  treeMat = new THREE.MeshLambertMaterial({ map: leafTex() });
 }
 
 /* ---------------- road + freeway meshes ---------------- */
@@ -868,7 +1233,7 @@ function makeFurnitureGeo() {
   }
   palmCrownGeo = new THREE.BufferGeometry(); palmCrownGeo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); palmCrownGeo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); palmCrownGeo.setIndex(I); palmCrownGeo.computeVertexNormals();
   treeTrunkGeo = new THREE.CylinderGeometry(.22, .3, 2.6, 5); treeTrunkGeo.translate(0, 1.3, 0);
-  treeTopGeo = new THREE.IcosahedronGeometry(2.8, 0); treeTopGeo.scale(1, .8, 1); treeTopGeo.translate(0, 4.4, 0);
+  treeTopGeo = new THREE.IcosahedronGeometry(2.8, IS_TOUCH ? 0 : 1); treeTopGeo.scale(1, .8, 1); treeTopGeo.translate(0, 4.4, 0);
   lampPoleGeo = new THREE.CylinderGeometry(.1, .14, 8.5, 5); lampPoleGeo.translate(0, 4.25, 0);
   lampHeadGeo = new THREE.BoxGeometry(.5, .22, 2.4); lampHeadGeo.translate(0, 8.4, 1.1);
   // bus stop: shelter (roof + back glass + posts), bench, sign pole; local +z faces the street
@@ -1235,7 +1600,7 @@ function makePerson(def, seated) {
   const hipY = seated ? .45 : .92;
   box(.52, .62, .3, def.top, 0, hipY + .32, 0);
   box(.54, .1, .32, def.top2, 0, hipY + .05, 0);
-  const head = box(.27, .3, .28, def.skin, 0, hipY + .82, 0);
+  const head = box(.27, .3, .28, def.skin, 0, hipY + .82, 0); head.material = driverFaceMat(def);
   box(.29, .1, .3, def.hair, 0, hipY + .99, -.01);
   if (def.bun) { const b = new THREE.Mesh(new THREE.SphereGeometry(.11, 8, 6), m(def.hair)); b.position.set(0, hipY + 1.06, -.1); g.add(b); }
   if (def.beard) box(.25, .09, .05, def.hair, 0, hipY + .7, .13);
@@ -1284,7 +1649,7 @@ function makeCar(type, topDown) {
   let wheels = [], wr, roof = null, seat = [0, 0, 0];
   if (type === 'low') {
     const paint = P(0x5a1670, 110);
-    add(new THREE.BoxGeometry(2.0, .62, 5.5), paint, 0, .62, 0);
+    add(new THREE.BoxGeometry(2.0, .62, 5.5), paintJob('low'), 0, .62, 0);
     add(new THREE.BoxGeometry(2.04, .1, 5.56), chrome, 0, .42, 0);
     add(new THREE.BoxGeometry(1.8, .55, 2.5), glass, 0, 1.2, -.35);
     roof = add(new THREE.BoxGeometry(1.86, .1, 2.2), P(0xf2efe6, 30), 0, 1.5, -.45);
@@ -1294,7 +1659,8 @@ function makeCar(type, topDown) {
     seat = [-.42, .55, -.25];
   } else if (type === 'bmr') {
     const paint = P(0x0b0b0d, 140);
-    add(new THREE.BoxGeometry(1.9, .7, 4.9), paint, 0, .72, 0);
+    add(new THREE.BoxGeometry(1.9, .7, 4.9), paintJob('bmr'), 0, .72, 0);
+    for (const s of [-1, 1]) add(new THREE.BoxGeometry(.24, .14, .1), paint, s * 1.02, 1.12, .95);
     const cab = add(new THREE.BoxGeometry(1.7, .6, 2.5), glass, 0, 1.36, -.25);
     roof = add(new THREE.BoxGeometry(1.64, .08, 1.9), paint, 0, 1.68, -.35);
     add(new THREE.BoxGeometry(1.0, .16, .06), new THREE.MeshLambertMaterial({ color: 0x111111 }), 0, .82, 2.46);
@@ -1302,7 +1668,8 @@ function makeCar(type, topDown) {
     seat = [-.4, .62, -.2];
   } else {
     const paint = P(0x3a3f45, 40);
-    add(new THREE.BoxGeometry(2.0, 1.0, 4.8), paint, 0, 1.05, 0);
+    add(new THREE.BoxGeometry(2.0, 1.0, 4.8), paintJob('suv'), 0, 1.05, 0);
+    for (const s of [-1, 1]) add(new THREE.BoxGeometry(.26, .18, .1), P(0x111111, 20), s * 1.1, 1.75, .95);
     add(new THREE.BoxGeometry(1.86, .72, 2.7), glass, 0, 1.9, -.35);
     roof = add(new THREE.BoxGeometry(1.9, .1, 2.8), paint, 0, 2.3, -.4);
     add(new THREE.BoxGeometry(1.7, .06, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }), 0, 2.4, -.4);
@@ -1327,28 +1694,30 @@ function buildNodeWays() {
   for (let w = 0; w < NWAYS; w++) if (WCLS[w] >= 2 && WCLS[w] <= 5) for (let k = 0; k < WLEN[w]; k++) { const n = WN[WOFF[w] + k]; if (ends.has(n)) { let l = NODEWAYS.get(n); if (!l) NODEWAYS.set(n, l = []); l.push([w, k]); } }
 }
 function vcGeo(parts) {
-  const P = [], N = [], Cc = [], I = [];
-  for (const [w, h, d, x, y, z, col] of parts) {
+  const P = [], N = [], Cc = [], U = [], I = [];
+  for (const [w, h, d, x, y, z, col, faces] of parts) {
     const b = new THREE.BoxGeometry(w, h, d); b.translate(x, y, z); const o = P.length / 3;
+    const ua = Array.from(b.attributes.uv.array); faceUV(ua, 0, VFACES[faces] || null); U.push(...ua);
     const pa = b.attributes.position.array, na = b.attributes.normal.array; for (let i = 0; i < pa.length; i++) { P.push(pa[i]); N.push(na[i]); } for (let i = 0; i < pa.length / 3; i++) Cc.push(...col);
     for (const i of b.index.array) I.push(i + o);
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(Cc, 3)); g.setIndex(I); return g;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(Cc, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); return g;
 }
-const PAINT = [1, 1, 1], GLASS = [.25, .3, .36], TIRE = [.08, .08, .08], HEAD = [3, 3, 2.6], TAIL = [2, .2, .2];
+const PAINT = [1, 1, 1], GLASS = [.25, .3, .36], TIRE = [1, 1, 1], HEAD = [3, 3, 2.6], TAIL = [2, .2, .2];
 function carGeo(kind) {
   if (kind === 2) // city bus: white with an orange band (paint channel is tinted per bus)
-    return vcGeo([[2.55, 2.4, 12, 0, 1.75, 0, PAINT], [2.6, .9, 11.6, 0, 2.2, 0, GLASS], [2.6, .35, 12.05, 0, 1.1, 0, [2.2, 1.0, .25]], [2.3, .6, .1, 0, 1.2, 6.01, [.2, .2, .2]],
-      [.6, .9, .9, 1.05, .45, 4, TIRE], [.6, .9, .9, -1.05, .45, 4, TIRE], [.6, .9, .9, 1.05, .45, -3.8, TIRE], [.6, .9, .9, -1.05, .45, -3.8, TIRE], [2, 2.4, .1, 0, 1.8, 6.02, GLASS]]);
-  return kind === 0 ? vcGeo([[1.85, .62, 4.5, 0, .6, 0, PAINT], [1.62, .55, 2.2, 0, 1.15, -.25, GLASS], [.5, .5, .5, .82, .32, 1.45, TIRE], [.5, .5, .5, -.82, .32, 1.45, TIRE], [.5, .5, .5, .82, .32, -1.45, TIRE], [.5, .5, .5, -.82, .32, -1.45, TIRE], [.3, .12, .04, .6, .7, 2.26, HEAD], [.3, .12, .04, -.6, .7, 2.26, HEAD], [.3, .12, .04, .65, .72, -2.26, TAIL], [.3, .12, .04, -.65, .72, -2.26, TAIL]])
-    : vcGeo([[1.95, 1.05, 4.9, 0, .95, 0, PAINT], [1.85, .75, 3.3, 0, 1.85, -.4, GLASS], [.6, .6, .55, .9, .36, 1.6, TIRE], [.6, .6, .55, -.9, .36, 1.6, TIRE], [.6, .6, .55, .9, .36, -1.6, TIRE], [.6, .6, .55, -.9, .36, -1.6, TIRE], [.3, .14, .04, .65, 1.1, 2.46, HEAD], [.3, .14, .04, -.65, 1.1, 2.46, HEAD], [.3, .14, .04, .7, 1.1, -2.46, TAIL], [.3, .14, .04, -.7, 1.1, -2.46, TAIL]]);
+    return vcGeo([[2.55, 2.4, 12, 0, 1.75, 0, PAINT, 'bus'], [2.6, .9, 11.6, 0, 2.2, 0, GLASS, 'glass'], [2.6, .35, 12.05, 0, 1.1, 0, [2.2, 1.0, .25]], [2.3, .6, .1, 0, 1.2, 6.01, [.2, .2, .2]],
+      [.6, .9, .9, 1.05, .45, 4, TIRE, 'wheel'], [.6, .9, .9, -1.05, .45, 4, TIRE, 'wheel'], [.6, .9, .9, 1.05, .45, -3.8, TIRE, 'wheel'], [.6, .9, .9, -1.05, .45, -3.8, TIRE, 'wheel'], [2, 2.4, .1, 0, 1.8, 6.02, PAINT, 'busWind'],
+      [.12, .5, .5, 1.36, 2.3, 5.6, [.15, .15, .15]], [.12, .5, .5, -1.36, 2.3, 5.6, [.15, .15, .15]]]);
+  return kind === 0 ? vcGeo([[1.85, .62, 4.5, 0, .6, 0, PAINT, 'body'], [1.62, .55, 2.2, 0, 1.15, -.25, GLASS, 'glass'], [.5, .5, .5, .82, .32, 1.45, TIRE, 'wheel'], [.5, .5, .5, -.82, .32, 1.45, TIRE, 'wheel'], [.5, .5, .5, .82, .32, -1.45, TIRE, 'wheel'], [.5, .5, .5, -.82, .32, -1.45, TIRE, 'wheel'], [.2, .12, .1, 1.0, .95, .75, PAINT], [.2, .12, .1, -1.0, .95, .75, PAINT], [.3, .12, .04, .6, .7, 2.26, HEAD], [.3, .12, .04, -.6, .7, 2.26, HEAD], [.3, .12, .04, .65, .72, -2.26, TAIL], [.3, .12, .04, -.65, .72, -2.26, TAIL]])
+    : vcGeo([[1.95, 1.05, 4.9, 0, .95, 0, PAINT, 'body'], [1.85, .75, 3.3, 0, 1.85, -.4, GLASS, 'glass'], [.6, .6, .55, .9, .36, 1.6, TIRE, 'wheel'], [.6, .6, .55, -.9, .36, 1.6, TIRE, 'wheel'], [.6, .6, .55, .9, .36, -1.6, TIRE, 'wheel'], [.6, .6, .55, -.9, .36, -1.6, TIRE, 'wheel'], [1.75, .08, 1.6, 0, 2.26, -.6, [.2, .2, .2]], [.22, .14, .1, 1.07, 1.6, .9, PAINT], [.22, .14, .1, -1.07, 1.6, .9, PAINT], [.3, .14, .04, .65, 1.1, 2.46, HEAD], [.3, .14, .04, -.65, 1.1, 2.46, HEAD], [.3, .14, .04, .7, 1.1, -2.46, TAIL], [.3, .14, .04, -.7, 1.1, -2.46, TAIL]]);
 }
 const TRAFFIC_COLORS = ['#c0392b', '#f4f4f4', '#1b1b1b', '#7f8c8d', '#2c5f8a', '#d4a632', '#1e7a46', '#e8e0cc', '#5a1670', '#bdc3c7', '#2b2b2b', '#a93226'].map(h => new THREE.Color(h));
 const BUS_COLOR = new THREE.Color('#f2f2ee');
 const traffic = []; let trafficMesh;
 const TCAP = [90, 90, 12];
 function initTraffic() {
-  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const m = skinMat(vehicleAtlas(), 0, { vertexColors: true });
   trafficMesh = [0, 1, 2].map(k => { const t = new THREE.InstancedMesh(carGeo(k), m, TCAP[k]); for (let i = 0; i < TCAP[k]; i++) t.setColorAt(i, TRAFFIC_COLORS[i % 12]); t.castShadow = true; t.count = 0; t.instanceMatrix.setUsage(THREE.DynamicDrawUsage); t.frustumCulled = false; scene.add(t); return t; });
   for (let i = 0; i < 4; i++) COP_POOL.push(makeCopCar());
 }
@@ -1357,7 +1726,7 @@ const COP_POOL = [];
 function makeCopCar() {
   const g = new THREE.Group(), L = c => new THREE.MeshLambertMaterial({ color: c });
   const box = (w, h, d, x, y, z, m) => { const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; g.add(me); return me; };
-  box(1.9, .62, 4.8, 0, .62, 0, L(0x111111)); box(1.92, .4, 2.2, 0, .7, -.1, L(0xf4f4f4));
+  box(1.9, .62, 4.8, 0, .62, 0, L(0x111111)); box(1.92, .4, 2.2, 0, .7, -.1, copDoorMaterial()); box(1.5, .32, .14, 0, .5, 2.46, L(0x1a1a1a)); for (const s of [-1, 1]) { box(.12, .5, .12, s * .55, .62, 2.4, L(0x1a1a1a)); box(.36, .14, .05, s * .62, .78, 2.41, new THREE.MeshBasicMaterial({ color: 0xfff2d0 })); box(.22, .12, .1, s * .98, 1.05, .8, L(0x111111)); }
   box(1.66, .55, 2.3, 0, 1.2, -.25, new THREE.MeshLambertMaterial({ color: 0x1a2430 })); box(1.6, .06, 2, 0, 1.5, -.3, L(0xf4f4f4));
   const red = new THREE.MeshBasicMaterial({ color: 0x550000 }), blue = new THREE.MeshBasicMaterial({ color: 0x000055 });
   box(.7, .16, .3, -.38, 1.6, -.2, red); box(.7, .16, .3, .38, 1.6, -.2, blue);
@@ -1507,13 +1876,17 @@ const PMAX = 120; let pedParts; const peds = [];
 const SKINS = ['#5a3825', '#7a4a2e', '#9c6a45', '#c08a5c', '#e0b48a', '#3d2617'].map(h => new THREE.Color(h));
 const SHIRTS = ['#f4f4f2', '#1b1b1b', '#c0392b', '#2c5f8a', '#f2c14e', '#1e7a46', '#d9a3a8', '#7f8c8d', '#0D2B4F', '#e86a1a', '#6d2a8a'].map(h => new THREE.Color(h));
 const PANTS = ['#1b1b1b', '#2c3e50', '#b8a77f', '#4a4a4a', '#5d6d7e', '#d9a3a8'].map(h => new THREE.Color(h));
+const SH_UV = [[.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98], [0, .5, .25, 1], [0, 0, .25, .5]];
+const HD_UV = [[0, .25, .25, .5], [0, .25, .25, .5], [.02, .03, .23, .2], [.1, .55, .15, .6], [0, .5, .25, 1], [0, 0, .25, .25]];
+const ARM_UV = [[.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98], [.19, .92, .22, .98]];
+const LEG_UV = [[0, 0, 1, 1], [0, 0, 1, 1], [0, .9, 1, 1], [0, 0, 1, .1], [0, 0, 1, 1], [0, 0, 1, 1]];
 function initPeds() {
-  const m = new THREE.MeshLambertMaterial({ color: 0xffffff });
-  const mk = (w, h, d, ty) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, ty, 0); const im = new THREE.InstancedMesh(g, m, PMAX); for (let i = 0; i < PMAX; i++) im.setColorAt(i, SHIRTS[0]); im.count = 0; im.castShadow = true; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(im); return im; };
-  pedParts = { torso: mk(.5, .62, .3, .31), head: mk(.26, .3, .27, .15), legL: mk(.2, .86, .22, -.43), legR: mk(.2, .86, .22, -.43), armL: mk(.14, .6, .15, -.3), armR: mk(.14, .6, .15, -.3) };
+  const T = pedTextures(), mats = { torso: skinMat(T.shirt, .25), head: skinMat(T.face, .25), leg: skinMat(T.legs, 0), arm: skinMat(T.shirt, .25) };
+  const mk = (w, h, d, ty, m, uvr) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, ty, 0); remapBoxUV(g, uvr); g.setAttribute('aVar', new THREE.InstancedBufferAttribute(new Float32Array(PMAX), 1)); const im = new THREE.InstancedMesh(g, m, PMAX); for (let i = 0; i < PMAX; i++) im.setColorAt(i, SHIRTS[0]); im.count = 0; im.castShadow = true; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(im); return im; };
+  pedParts = { torso: mk(.5, .62, .3, .31, mats.torso, SH_UV), head: mk(.26, .3, .27, .15, mats.head, HD_UV), legL: mk(.2, .86, .22, -.43, mats.leg, LEG_UV), legR: mk(.2, .86, .22, -.43, mats.leg, LEG_UV), armL: mk(.14, .6, .15, -.3, mats.arm, ARM_UV), armR: mk(.14, .6, .15, -.3, mats.arm, ARM_UV) };
 }
 function newPed(x, z, hx, hz, walking) {
-  return { x, z, y: H(x, z), hx, hz, v: walking ? 1.1 + Math.random() * .6 : 0, ph: Math.random() * 7, skin: SKINS[Math.floor(Math.random() * 6)], shirt: SHIRTS[Math.floor(Math.random() * SHIRTS.length)], pants: PANTS[Math.floor(Math.random() * 6)], jump: null, wave: false, seg: -1, segT: 0 };
+  return { x, z, y: H(x, z), hx, hz, v: walking ? 1.1 + Math.random() * .6 : 0, ph: Math.random() * 7, skin: SKINS[Math.floor(Math.random() * 6)], shirt: SHIRTS[Math.floor(Math.random() * SHIRTS.length)], pants: PANTS[Math.floor(Math.random() * 6)], sv: Math.floor(Math.random() * 4), hv: Math.floor(Math.random() * 4), jump: null, wave: false, seg: -1, segT: 0 };
 }
 const _M = new THREE.Matrix4(), _M2 = new THREE.Matrix4(), _Q = new THREE.Quaternion(), _E = new THREE.Euler(), _V = new THREE.Vector3(), _S = new THREE.Vector3(1, 1, 1);
 function drawPeds(list) {
@@ -1528,9 +1901,10 @@ function drawPeds(list) {
     part(pedParts.legL, -.13, .9, sw, p.pants); part(pedParts.legR, .13, .9, -sw, p.pants);
     const wave = p.wave ? -2.6 + Math.sin(performance.now() / 120) * .4 : 0;
     part(pedParts.armL, -.33, 1.48, -sw * .8, p.shirt); part(pedParts.armR, .33, 1.48, p.wave ? wave : sw * .8, p.shirt, p.wave ? -.3 : 0);
+    const sv = p.sv | 0; pedParts.torso.geometry.attributes.aVar.array[i] = sv; pedParts.armL.geometry.attributes.aVar.array[i] = sv; pedParts.armR.geometry.attributes.aVar.array[i] = sv; pedParts.head.geometry.attributes.aVar.array[i] = p.hv | 0;
     i++;
   }
-  for (const k in pedParts) { const im = pedParts[k]; im.count = i; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+  for (const k in pedParts) { const im = pedParts[k]; im.count = i; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.geometry.attributes.aVar.needsUpdate = true; }
 }
 
 /* ---------------- audio: V8/V6 engine with gears, tire squeal, siren ---------------- */
@@ -1792,7 +2166,7 @@ function updateRides(dt, now) {
     } else if (R.routeT <= 0) { R.routeT = 1.5; const rt = astar(nearestNode(p.x, p.z), R.target.node); if (rt) { R.route = rt.path; R.routeIdx = 0; } }
     let tx = R.target.dx, tz = R.target.dz;
     if (R.route) { let acc = 0, k = R.routeIdx, px = p.x, pz = p.z; while (k < R.route.length - 1 && acc < 45) { const n = R.route[k + 1]; acc += Math.hypot(NX[n] - px, NZ[n] - pz); px = NX[n]; pz = NZ[n]; k++; } tx = px; tz = pz; }
-    arrow.position.set(p.x, p.y + 4.6 + Math.sin(now / 250) * .12, p.z);
+    arrow.position.set(p.x, p.y + (IS_TOUCH ? 3.9 : 4.6) + Math.sin(now / 250) * .12, p.z);
     arrow.rotation.set(.22, Math.atan2(tx - p.x, tz - p.z), 0);
     if (R.current) {
       const remain = R.route ? routeRemain() : Math.hypot(R.target.dx - p.x, R.target.dz - p.z), c = R.current, f = clamp(c.t / c.tmax, 0, 1);
@@ -1825,10 +2199,22 @@ addEventListener('keydown', e => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-const touchState = { l: 0, r: 0, gas: 0, brake: 0, slide: 0 };
-function bindTouch(id, k) { const b = $(id); const on = e => { e.preventDefault(); touchState[k] = 1; b.classList.add('on'); }; const off = e => { e.preventDefault(); touchState[k] = 0; b.classList.remove('on'); }; b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off); }
-[['tb-l', 'l'], ['tb-r', 'r'], ['tb-gas', 'gas'], ['tb-brake', 'brake'], ['tb-slide', 'slide']].forEach(([a, b]) => bindTouch(a, b));
-$('tb-hop').addEventListener('pointerdown', e => { e.preventDefault(); if (G.state === 'play') hop(); });
+const touchState = { l: 0, r: 0, gas: 0, brake: 0, slide: 0, hop: 0 };
+const TBTNS = [...document.querySelectorAll('#touch [data-k]')];
+function touchScan(e) {
+  if (e.target.closest && e.target.closest('#touch')) e.preventDefault();
+  const st = { l: 0, r: 0, gas: 0, brake: 0, slide: 0, hop: 0 };
+  for (const t of e.touches) {
+    const el = document.elementFromPoint(t.clientX, t.clientY), b = el && el.closest && el.closest('#touch [data-k]');
+    if (b) st[b.dataset.k] = 1;
+  }
+  if (st.hop && !touchState.hop && G.state === 'play') hop();
+  Object.assign(touchState, st);
+  for (const b of TBTNS) b.classList.toggle('on', !!st[b.dataset.k]);
+}
+['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(ev => document.addEventListener(ev, touchScan, { passive: false }));
+$('touch').addEventListener('contextmenu', e => e.preventDefault());
+if (IS_TOUCH) document.body.classList.add('touch');
 $('ph-yes').addEventListener('click', () => acceptOffer());
 $('b-pause').addEventListener('click', () => pauseShift());
 $('b-mute').addEventListener('click', () => setMute(!G.muted));
@@ -1849,7 +2235,7 @@ function setupPlayer() {
     arrow = new THREE.Group();
     const front = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0xf2c14e, emissive: 0x6b4a0c, emissiveIntensity: .6, transparent: true, opacity: .88 }));
     const back = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x0D2B4F, side: THREE.BackSide })); back.scale.setScalar(1.12); back.position.y = -.05;
-    arrow.add(back, front); arrow.rotation.order = 'YXZ'; arrow.visible = false; scene.add(arrow);
+    arrow.add(back, front); arrow.rotation.order = 'YXZ'; arrow.visible = false; if (IS_TOUCH) arrow.scale.setScalar(.68); scene.add(arrow);
   }
   applyTime(G.clock);
 }
@@ -2004,7 +2390,7 @@ function startGame() {
   traffic.length = 0; peds.length = 0; leaving.length = 0; R.offer = null; R.pickup = null; R.current = null; R.route = null; R.cool = 2; R.ring.visible = false; R.destRing.visible = false; arrow.visible = false;
   LAW.chase = null; LAW.wrongT = 0; CRUMBS.length = 0;
   updateChunks(player.x, player.z, 99);
-  $('menu').hidden = true; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH;
+  $('menu').hidden = true; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH; resize();
   $('phone').classList.add('off');
   camPos.set(player.x - Math.sin(player.heading) * 10, player.y + 5, player.z - Math.cos(player.heading) * 10);
   if (standing) { scene.remove(standing); standing = null; } driverModel.visible = true;
@@ -2020,7 +2406,7 @@ function pauseShift() {
   $('unlock').textContent = career < 250 ? `Career $${career} of $250 to unlock the lowrider top down` : 'Lowrider top down unlocked. Press T while driving.';
   engineQuiet();
 }
-function resumeShift() { G.state = 'play'; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH; last = performance.now(); }
+function resumeShift() { G.state = 'play'; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH; resize(); last = performance.now(); }
 function tick() {
   requestAnimationFrame(tick);
   const now = performance.now(); let dt = Math.min(.05, (now - last) / 1000); last = now;
@@ -2115,7 +2501,7 @@ function tick() {
     camPos.set(p.x + fx * CV.ahead, p.y + CV.up, p.z + fz * CV.ahead);
     camLook.set(p.x + fx * 30, p.y + CV.up - .6, p.z + fz * 30);
   } else {
-    const back = CV.back + sp * .06, up = CV.up + sp * .02;
+    const PORT = camera.aspect < 1 ? 1.18 : 1, back = (CV.back + sp * .06) * PORT, up = (CV.up + sp * .02) * PORT;
     const want = new THREE.Vector3(p.x - fx * back, Math.max(p.y + up, H(p.x - fx * back, p.z - fz * back) + 2.5), p.z - fz * back);
     camPos.lerp(want, 1 - Math.exp(-6 * dt));
     camLook.set(p.x + fx * CV.look, p.y + 1.6, p.z + fz * CV.look);
@@ -2123,7 +2509,7 @@ function tick() {
   camera.position.copy(camPos);
   if (p.shake > 0) { camera.position.x += (Math.random() - .5) * p.shake; camera.position.y += (Math.random() - .5) * p.shake; p.shake = Math.max(0, p.shake - dt * 2); }
   camera.lookAt(camLook);
-  const fov = 62 + Math.min(14, sp * .28); if (Math.abs(camera.fov - fov) > .1) { camera.fov = lerp(camera.fov, fov, .1); camera.updateProjectionMatrix(); }
+  const fov = (camera.aspect < 1 ? 74 : 62) + Math.min(14, sp * .28); if (Math.abs(camera.fov - fov) > .1) { camera.fov = lerp(camera.fov, fov, .1); camera.updateProjectionMatrix(); }
   sun.position.set(p.x + SUN_DIR.x * 220, p.y + SUN_DIR.y * 220, p.z + SUN_DIR.z * 220); sun.target.position.set(p.x, p.y, p.z);
   skyMesh.position.set(p.x, p.y, p.z); backdrop.position.set(p.x, p.y + 60, p.z); backdropN.position.copy(backdrop.position); ocean.position.set(Math.round(p.x / 53.3) * 53.3, -1.4, Math.round(p.z / 53.3) * 53.3); ocean.material.map.offset.x = now / 90000;
   if (headlight) { headlight.position.set(p.x + fx * 2, p.y + 1.4, p.z + fz * 2); headlight.target.position.set(p.x + fx * 30, p.y, p.z + fz * 30); }
