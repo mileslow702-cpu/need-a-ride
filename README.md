@@ -10,3 +10,5 @@ Static site: `index.html` plus the map data files. No build step.
 - `elev.b64.txt` ground elevation grid
 
 Map data © OpenStreetMap contributors, ODbL.
+
+Engine sound: physically modeled engine synthesis from [engine-sound-generator](https://github.com/Antonio-R1/engine-sound-generator) by Antonio-R1, MIT license.
