@@ -136,6 +136,7 @@ body.touch #pop{top:34%}
 /* compact menu on phones so DRIVE is always reachable */
 body.touch #menu{overflow-y:auto;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 14px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 14px) calc(env(safe-area-inset-left,0px) + 12px)}
 body.touch #menu .title{font-size:clamp(40px,12vw,64px)}
+@media (orientation:portrait){body.touch #menu{background:linear-gradient(180deg,rgba(8,26,49,.75) 0%,rgba(8,26,49,0) 16%,rgba(8,26,49,0) 44%,rgba(8,26,49,.9) 54%,rgba(8,26,49,.95) 100%)}}
 body.touch #menu .sub{font-size:13px;letter-spacing:.18em}
 body.touch .panel{grid-template-columns:1fr;gap:10px;margin-top:auto}
 body.touch .group{gap:5px}
@@ -203,6 +204,37 @@ body.touch .pz .go{font-size:26px;padding:6px 30px}
 body.touch #unlock{font-size:11px}
 @media (orientation:portrait){body.touch .pz-map canvas{max-width:min(92vw,34vh)}}
 @media (orientation:landscape) and (max-height:520px){body.touch .pz{grid-template-columns:auto 1fr}body.touch .pz-map canvas{max-width:calc(100vh - 40px)}body.touch .pz-side .title{display:none}body.touch .pz .opts{flex-direction:row;flex-wrap:wrap;align-items:center}body.touch .pz .stats{gap:6px}body.touch .pz .stats b{font-size:20px}body.touch .pz .stats span{font-size:9px}body.touch .pz-side{gap:5px}}
+/* car select on wide screens: menu in a right column, car and driver in clear view on the left */
+@media (min-width:900px) and (min-aspect-ratio:5/4){
+  body:not(.touch) #menu{align-items:flex-end;padding:3vh 3vw;gap:12px;background:linear-gradient(90deg,rgba(8,26,49,0) 0%,rgba(8,26,49,0) 52%,rgba(8,26,49,.82) 70%,rgba(8,26,49,.92) 100%)}
+  body:not(.touch) #menu .title{font-size:clamp(44px,5.4vw,78px);align-self:flex-end;text-align:right}
+  body:not(.touch) #menu .sub{font-size:14px;letter-spacing:.24em;text-align:right;max-width:430px}
+  body:not(.touch) #menu .panel{grid-template-columns:1fr;width:430px;margin-top:auto;gap:12px}
+  body:not(.touch) #menu .opts{justify-content:flex-start}
+  body:not(.touch) #menu .group h3{text-align:left}
+  body:not(.touch) #menu .go{align-self:flex-end}
+  body:not(.touch) #menu .howto{max-width:430px;text-align:right;font-size:12px}
+  body:not(.touch) #welcome{max-width:430px;text-align:right}
+}
+/* email gate */
+#gate{background:radial-gradient(ellipse at 50% 30%,#123a66 0%,var(--navy-deep) 70%)}
+#gate form{display:flex;flex-direction:column;gap:10px;width:min(420px,100%);align-items:stretch}
+#gate label{font-family:var(--display);letter-spacing:.2em;font-size:18px;color:var(--gold-hi);text-align:left}
+#g-email{font:500 18px var(--body);padding:12px 14px;border-radius:3px;border:2px solid var(--gold);background:#0b223f;color:var(--cream);letter-spacing:.02em;user-select:text;-webkit-user-select:text}
+#g-email:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#g-err{min-height:18px;color:#ff9a90;font-size:13px;text-align:left}
+#gate .go{align-self:center;margin-top:4px}
+#gate .fine{font-size:11px;color:#9fb0c6;letter-spacing:.04em;max-width:46ch;text-align:center;align-self:center}
+#welcome{color:var(--green);letter-spacing:.04em;font-size:14px;min-height:0;max-width:60ch}
+#welcome:empty{display:none}
+/* now playing */
+#np{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translate(-50%,20px);opacity:0;pointer-events:none;background:rgba(8,26,49,.88);border:2px solid var(--gold);color:var(--cream);font:500 13px var(--body);letter-spacing:.06em;padding:5px 12px;border-radius:999px;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;transition:opacity .4s,transform .4s;z-index:5}
+#np.show{animation:np 5s ease forwards}
+@keyframes np{0%{opacity:0;transform:translate(-50%,20px)}8%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,0)}}
+body.touch #np{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 8px)}
+.radio{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.radio button{font-family:var(--display);font-size:18px;letter-spacing:.08em;padding:6px 12px;background:rgba(13,43,79,.85);color:var(--cream);border:2px solid var(--gold);border-radius:3px;cursor:pointer}
+.radio span{font-size:13px;color:#d7deea;letter-spacing:.03em;flex:1 1 160px;min-width:0}
 /* results */
 #results{background:rgba(8,26,49,.9)}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:min(560px,100%)}
@@ -232,9 +264,25 @@ body.touch #unlock{font-size:11px}
   <div class="credit">A NORTH STAR &middot; DO BETTER NETWORK GAME</div>
 </div>
 
+<div id="gate" class="screen" hidden>
+  <p class="title">NEED A RIDE?</p>
+  <div class="sub">SOUTH LA</div>
+  <form id="g-form" novalidate>
+    <label for="g-email">ENTER YOUR EMAIL TO PLAY</label>
+    <input id="g-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" required>
+    <div id="g-err" role="alert"></div>
+    <button class="go" id="g-go" type="submit">PLAY</button>
+    <div class="fine">Your email saves your progress so you can pick up where you left off, and lets the Do Better Network reach you about the game.</div>
+  </form>
+  <div class="credit">A NORTH STAR &middot; DO BETTER NETWORK GAME</div>
+</div>
+
+<div id="np" aria-live="polite"></div>
+
 <div id="menu" class="screen" hidden>
   <p class="title">NEED A RIDE?</p>
   <div class="sub">CRENSHAW &middot; INGLEWOOD &middot; CULVER CITY &middot; THE MARINA</div>
+  <div id="welcome"></div>
   <div class="panel">
     <div class="group"><h3>DRIVER</h3><div class="opts" id="o-driver">
       <button class="opt" id="d-dre" data-v="dre" aria-pressed="true">DRE<small>Westside, low-key</small></button>
@@ -297,6 +345,7 @@ body.touch #unlock{font-size:11px}
         <div><b id="r-career">$0</b><span>Career</span></div>
       </div>
       <div class="pz-gas">GAS<div class="gbar"><i id="r-gas"></i></div><small id="r-gaspct">100%</small></div>
+      <div class="group"><h3>RADIO</h3><div class="radio"><button id="r-back" type="button">&#9198; REWIND</button><button id="r-skip" type="button">SKIP &#9197;</button><span id="r-np"></span></div></div>
       <div class="group"><h3>DRIVER</h3><div class="opts" id="p-driver">
         <button class="opt" data-v="dre" aria-pressed="true">DRE</button><button class="opt" data-v="nia" aria-pressed="false">NIA</button>
       </div></div>
@@ -1334,6 +1383,7 @@ function fillPause() {
   $('r-money').textContent = (G.money < 0 ? '-$' : '$') + Math.abs(G.money).toFixed(0); $('r-rides').textContent = G.rides; $('r-tips').textContent = '$' + Math.round(G.tips);
   $('r-career').textContent = '$' + Math.round(career);
   const pct = Math.round(G.fuel * 100); $('r-gas').style.width = pct + '%'; $('r-gaspct').textContent = pct >= 99 ? 'Full tank' : pct + '%  ·  fill up: $' + ((1 - G.fuel) * GAS.price).toFixed(2);
+  $('r-np').textContent = SONGS[RADIO.cur] || '';
   $('r-gas').style.background = G.fuel < .15 ? 'var(--red)' : G.fuel < .35 ? 'var(--yellow)' : 'var(--green)';
   $('unlock').textContent = career < 250 ? `Career $${Math.round(career)} of $250 unlocks the lowrider top down` : 'Lowrider top down unlocked. Press T while driving.';
   document.querySelectorAll('#p-driver .opt').forEach(o => o.setAttribute('aria-pressed', String(o.dataset.v === G.driver)));
@@ -1352,8 +1402,122 @@ function bindPauseOpts() {
 function applySwap() {
   if (!G.swap) return; G.swap = false;
   if (G.car !== 'low') G.topDown = false;
-  setupPlayer(); player.st = CARS[G.car]; startEngine(G.car);
+  setupPlayer(); player.st = CARS[G.car]; startEngine(G.car); radioStart(G.car, true);
   if (carModel) carModel.group.visible = !CAMS[G.cam].inside;
+}
+
+/* ---------------- in-car radio: each ride has its own playlist ---------------- */
+const SONGS = {
+  creep: "Creep n Crawl", ringin: "Dr. Dre — Keep Their Heads Ringin'", please: 'Snoop Dogg ft. Nate Dogg & Xzibit — Bitch Please', money: "I'm Gettin Money",
+  safe: 'Miles Low ft. Storm Green — Safe (Imagine That)', pleeze: 'Dom Kennedy ft. Nipsey Hussle — Pleeze', blackman: 'Larry June & Cardo Got Wings — Black Man',
+  hard4radio: 'Drake — 2 Hard 4 The Radio', hov97: '97 Hov', frienddo: 'Belly Gang Kushington — Friend Do'
+};
+// lowrider: Creep n Crawl first, then the rest from a shuffled bag so each gets equal play; sedan and truck run in a set order
+const PLAYLISTS = { low: { first: 'creep', bag: ['ringin', 'please', 'money'] }, bmr: { order: ['safe', 'pleeze', 'blackman'] }, suv: { order: ['hard4radio', 'hov97', 'frienddo'] } };
+const RADIO = { el: null, list: null, hist: [], idx: -1, bag: [], node: null, gain: null };
+function radioInit() {
+  if (RADIO.el) return;
+  const el = new Audio(); el.preload = 'auto'; el.crossOrigin = 'anonymous'; RADIO.el = el;
+  el.addEventListener('ended', () => radioNext());
+  if (AC && !RADIO.node) { try { RADIO.node = AC.createMediaElementSource(el); RADIO.gain = AC.createGain(); RADIO.gain.gain.value = .85; RADIO.node.connect(RADIO.gain); RADIO.gain.connect(AC.master); } catch (e) { } }
+}
+function radioPick(list) {
+  if (list.order) return list.order[RADIO.hist.length % list.order.length];
+  if (!RADIO.hist.length) return list.first;
+  if (!RADIO.bag.length) { RADIO.bag = list.bag.slice().sort(() => Math.random() - .5); if (RADIO.bag[0] === RADIO.hist[RADIO.hist.length - 1] && RADIO.bag.length > 1) RADIO.bag.push(RADIO.bag.shift()); }
+  return RADIO.bag.shift();
+}
+function radioPlay(id) {
+  radioInit(); const el = RADIO.el; RADIO.cur = id;
+  el.src = 'music/' + id + '.mp3'; el.currentTime = 0;
+  const pr = el.play(); if (pr && pr.catch) pr.catch(() => { });
+  nowPlaying();
+}
+// theme: Creep n Crawl on the gate and menu until a ride is chosen
+function radioTheme() { RADIO.list = null; RADIO.hist = ['creep']; RADIO.idx = 0; RADIO.bag = []; radioInit(); if (RADIO.cur === 'creep' && !RADIO.el.paused) return; radioPlay('creep'); RADIO.el.loop = true; }
+function radioStart(car, keep) {
+  radioInit(); RADIO.el.loop = false;
+  const list = PLAYLISTS[car], first = list.order ? list.order[0] : list.first;
+  if (RADIO.list === list && keep) return;
+  RADIO.list = list; RADIO.hist = []; RADIO.bag = []; RADIO.idx = -1;
+  if (keep && RADIO.cur === first && !RADIO.el.paused) { RADIO.hist.push(first); RADIO.idx = 0; nowPlaying(); return; }
+  radioNext();
+}
+function radioNext() {
+  if (!RADIO.list) { radioPlay('creep'); return; }
+  if (RADIO.idx < RADIO.hist.length - 1) { RADIO.idx++; radioPlay(RADIO.hist[RADIO.idx]); return; }
+  const id = radioPick(RADIO.list); RADIO.hist.push(id); RADIO.idx = RADIO.hist.length - 1; radioPlay(id);
+}
+function radioBack() {
+  if (!RADIO.el) return;
+  if (RADIO.el.currentTime > 4 || RADIO.idx <= 0) { RADIO.el.currentTime = 0; const pr = RADIO.el.play(); if (pr && pr.catch) pr.catch(() => { }); nowPlaying(); return; }
+  RADIO.idx--; radioPlay(RADIO.hist[RADIO.idx]);
+}
+function nowPlaying() {
+  const t = SONGS[RADIO.cur] || ''; const np = $('np'); np.textContent = '♪ ' + t; np.classList.remove('show'); void np.offsetWidth; np.classList.add('show');
+  const r = $('r-np'); if (r) r.textContent = t;
+}
+
+/* ---------------- sign-in with email + automatic saves ---------------- */
+const SAVE = { email: '', data: null };
+function cleanEmail(e) { return String(e || '').trim().toLowerCase(); }
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e) && e.length < 120; }
+async function loadProgress(email) {
+  let local = null; try { local = JSON.parse(localStorage.getItem('nar_save_' + email) || 'null'); } catch (e) { }
+  let remote = null;
+  try { const ctl = new AbortController(); setTimeout(() => ctl.abort(), 4000); const r = await fetch('api/progress?email=' + encodeURIComponent(email), { signal: ctl.signal }); if (r.ok) remote = (await r.json()).data || null; } catch (e) { }
+  return [local, remote].filter(Boolean).sort((a, b) => (b.t || 0) - (a.t || 0))[0] || null;
+}
+function saveProgress() {
+  if (!SAVE.email || !player) return;
+  const d = { email: SAVE.email, t: Date.now(), career: store.get('career', 0), money: G.money, rides: G.rides, tips: G.tips, fuel: G.fuel, car: G.car, driver: G.driver, topDown: G.topDown,
+    x: Math.round(player.x * 10) / 10, z: Math.round(player.z * 10) / 10, heading: Math.round(player.heading * 1000) / 1000, clock: Math.round(G.clock), street: $('street').textContent };
+  SAVE.data = d;
+  try { localStorage.setItem('nar_save_' + SAVE.email, JSON.stringify(d)); } catch (e) { }
+  try { fetch('api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: SAVE.email, data: d }), keepalive: true }).catch(() => { }); } catch (e) { }
+}
+function applySave(d) {
+  if (!d) return;
+  if (d.career > store.get('career', 0)) store.set('career', d.career);
+  if (d.fuel != null) store.set('fuel', d.fuel);
+  if (CARS[d.car]) G.car = d.car; if (CHARS[d.driver]) G.driver = d.driver;
+  G.topDown = !!d.topDown && G.car === 'low' && store.get('career', 0) >= 250;
+  document.querySelectorAll('#o-car .opt').forEach(o => o.setAttribute('aria-pressed', String(o.dataset.v === G.car)));
+  document.querySelectorAll('#o-driver .opt').forEach(o => o.setAttribute('aria-pressed', String(o.dataset.v === G.driver)));
+}
+async function submitGate(ev) {
+  if (ev) ev.preventDefault();
+  const email = cleanEmail($('g-email').value);
+  if (!validEmail(email)) { $('g-err').textContent = 'Enter a real email address to play.'; $('g-email').focus(); return; }
+  $('g-err').textContent = ''; $('g-go').disabled = true; $('g-go').textContent = 'LOADING…';
+  initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : .55;
+  radioTheme();
+  try { localStorage.setItem('nar_email', email); } catch (e) { }
+  SAVE.email = email; SAVE.data = await loadProgress(email); applySave(SAVE.data);
+  $('welcome').textContent = SAVE.data ? `Welcome back. You left off on ${SAVE.data.street || 'the road'} with $${Math.round(SAVE.data.money || 0)} this shift and ${SAVE.data.rides || 0} rides.` : '';
+  if (!SAVE.data) saveFirst(email);
+  $('gate').hidden = true; $('menu').hidden = false; G.state = 'menu'; refreshMenu();
+}
+function saveFirst(email) { try { fetch('api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, data: { email, t: Date.now(), career: 0, money: 0, rides: 0, tips: 0, fuel: 1, car: G.car, driver: G.driver, clock: null, isNew: true } }), keepalive: true }).catch(() => { }); } catch (e) { } }
+
+/* ---------------- car-select showroom: parked on the sidewalk, Crenshaw traffic flying by behind ---------------- */
+function showroomSpot() {
+  const L = PLACES.lm.leimert, ns = nearestSeg(L[0], L[1]), A = segA[ns.id], B = segB[ns.id], w = segW[ns.id];
+  const x0 = lerp(NX[A], NX[B], ns.t), z0 = lerp(NZ[A], NZ[B], ns.t), len = Math.hypot(NX[B] - NX[A], NZ[B] - NZ[A]) || 1, dx = (NX[B] - NX[A]) / len, dz = (NZ[B] - NZ[A]) / len, hw = WHW[w];
+  let side = 1;
+  for (const s of [1, -1]) if (isPark(maskAt(x0 - dz * s * (hw + 14), z0 + dx * s * (hw + 14)))) { side = s; break; }
+  const nx = -dz * side, nz = dx * side;
+  return { x: x0 + nx * (hw + 4.2), z: z0 + nz * (hw + 4.2), y: H(x0 + nx * (hw + 4.2), z0 + nz * (hw + 4.2)), heading: Math.atan2(dx, dz), dx, dz, nx, nz, w, seg: ns.id };
+}
+// put cars straight onto the showroom street so it is busy from the first frame
+function menuSpawn(sr) {
+  const w = sr.w; let k0 = sr.seg; while (k0 > 0 && segW[k0 - 1] === w) k0--;
+  const n = WLEN[w] - 1, k = clamp((sr.seg - k0) + Math.floor((Math.random() - .5) * 14), 0, n - 1), kind = Math.random() < .12 ? 2 : Math.random() < .3 ? 1 : 0;
+  const dir = WONE[w] ? 1 : (Math.random() < .5 ? 1 : -1);
+  const c = { w, k, s: 0, dir, v: 14 + Math.random() * 6, vmax: (kind === 2 ? 13 : 16 + Math.random() * 5), kind, col: Math.floor(Math.random() * 12), x: 0, z: 0, hx: 0, hz: 1, knock: 0, kvx: 0, kvz: 0, spin: 0, ang: 0, cop: false, chase: null, wait: 0, lastStop: null };
+  c.s = Math.random() * segLen(c); placeCar(c); c.ang = Math.atan2(c.hx, c.hz);
+  for (const o of traffic) if (Math.hypot(o.x - c.x, o.z - c.z) < (kind === 2 ? 22 : 13)) return;
+  traffic.push(c);
 }
 
 /* ---------------- geometry builder ---------------- */
@@ -2570,6 +2734,7 @@ function dropoff() {
   phone('Trip complete', money(total), `${c.p.offer.name} rated you ${c.viol > 2 ? 3 : c.viol ? 4 : 5} stars.`, '', '', null, false);
   const p = c.p; p.x = c.dest.dx + 6; p.z = c.dest.dz; p.y = H(p.x, p.z); p.v = 1.2; p.wave = false; p.life = 6; leaving.push(p);
   R.current = null; R.route = null; R.destRing.visible = false; arrow.visible = false; R.cool = 12 + Math.random() * 8;
+  saveProgress();
 }
 function bail() {
   const c = R.current; G.bails++; pop('RIDE CANCELED'); blip([400, 300, 200], .15, 'sawtooth', .15);
@@ -2821,27 +2986,73 @@ function poseCar(dt) {
   cm.tailM.emissiveIntensity = p.thr < 0 && p.vfDisplay > .5 ? 1.8 : .2 + NIGHT * .8;
 }
 
+function stepTraffic(dt, px, pz, heavy, target) {
+  for (let i = traffic.length - 1; i >= 0; i--) {
+    const c = traffic[i];
+    if (c.chase || c.hunt) continue;
+    if (Math.hypot(c.x - px, c.z - pz) > 650 || (traffic.length > target + 6 && Math.hypot(c.x - px, c.z - pz) > 300)) { traffic.splice(i, 1); continue; }
+    if (c.knock > 0) { c.knock -= dt; c.x += c.kvx * dt; c.z += c.kvz * dt; c.kvx *= Math.exp(-2 * dt); c.kvz *= Math.exp(-2 * dt); c.ang += c.spin * dt; c.spin *= Math.exp(-2 * dt); if (c.knock <= 0) traffic.splice(i, 1); continue; }
+    let tv = c.vmax * (heavy ? .55 : 1);
+    const reach = c.kind === 2 ? 15 : 11;
+    const ahead = (ox, oz, rad) => { const dx = ox - c.x, dz = oz - c.z, f = dx * c.hx + dz * c.hz, l = Math.abs(dx * c.hz - dz * c.hx); return f > 0 && f < rad && l < 2.6; };
+    if (ahead(px, pz, reach + 5)) tv = 0;
+    for (const o of traffic) if (o !== c && ahead(o.x, o.z, reach)) { tv = Math.min(tv, o.v * .9); if (Math.hypot(o.x - c.x, o.z - c.z) < (o.kind === 2 || c.kind === 2 ? 11 : 7)) tv = 0; }
+    // red lights: stop short of the intersection
+    const endN = segNodes(c)[1], cl = SIGNODE.get(endN);
+    if (cl) { const st = sigState(cl, Math.abs(c.hz) > Math.abs(c.hx), G.elapsed), dist = segLen(c) - c.s; if (st === 2 || (st === 1 && dist > 12)) tv = Math.min(tv, Math.max(0, dist - 8) * .7); }
+    // buses stop at bus stops
+    if (c.kind === 2) {
+      if (c.wait > 0) { c.wait -= dt; tv = 0; }
+      else if (c.v > 2) { const l = BUS_GRID.get(gk(Math.floor(c.x / 50), Math.floor(c.z / 50))); if (l) for (const s of l) if (s !== c.lastStop && Math.hypot(s[0] - c.x, s[1] - c.z) < 13) { c.lastStop = s; c.wait = 5; break; } }
+    }
+    c.v += clamp(tv - c.v, -14 * dt, 5 * dt);
+    c.s += c.v * dt; let guard = 0;
+    while (c.s > segLen(c) && guard++ < 5) { if (!advanceCar(c)) { traffic.splice(i, 1); break; } }
+    if (traffic[i] !== c) continue;
+    placeCar(c); c.ang = Math.atan2(c.hx, c.hz);
+  }
+}
+function renderTraffic(now) {
+  const cnt = [0, 0, 0], M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), YA = new THREE.Vector3(0, 1, 0), V = new THREE.Vector3(), SV = new THREE.Vector3(1, 1, 1);
+  let copI = 0; const flash = Math.floor(now / 140) % 2;
+  for (const c of traffic) {
+    Q.setFromAxisAngle(YA, c.ang); V.set(c.x, H(c.x, c.z) + .02, c.z);
+    if (c.cop && copI < COP_POOL.length) {
+      const cp = COP_POOL[copI++]; cp.g.visible = true; cp.g.position.copy(V); cp.g.quaternion.copy(Q);
+      placeCopBeam(copI - 1, c, flash); const on = !!(c.chase || c.hunt); cp.red.color.setHex(on && flash ? 0xff2020 : 0x550000); cp.blue.color.setHex(on && !flash ? 0x2060ff : 0x000055);
+      continue;
+    }
+    const im = trafficMesh[c.kind], i = cnt[c.kind]++; if (i >= TCAP[c.kind]) continue;
+    M4.compose(V, Q, SV); im.setMatrixAt(i, M4); im.setColorAt(i, c.kind === 2 ? BUS_COLOR : TRAFFIC_COLORS[c.col]);
+  }
+  for (let i = copI; i < COP_BEAMS.length; i++) COP_BEAMS[i].visible = false;
+  for (; copI < COP_POOL.length; copI++) COP_POOL[copI].g.visible = false;
+  trafficMesh.forEach((im, k) => { im.count = Math.min(TCAP[k], cnt[k]); im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; });
+}
 /* ---------------- main loop ---------------- */
 let last = performance.now(), streetTimer = 0, miniCtx, camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), menuSpin = 0;
 function setupHUD() { miniCtx = $('mini').getContext('2d'); }
 const CAMS = [{ name: 'CHASE', back: 9.5, up: 4.2, look: 5 }, { name: 'FAR', back: 17, up: 7.5, look: 8 }, { name: 'HIGH', back: 6, up: 22, look: 2 }, { name: 'HOOD', inside: true, ahead: .4, up: 1.55 }];
 function cycleCam() { G.cam = (G.cam + 1) % CAMS.length; pop('CAMERA: ' + CAMS[G.cam].name); if (carModel) carModel.group.visible = !CAMS[G.cam].inside; }
-function setMute(m) { G.muted = m; store.set('muted', m); if (AC) AC.master.gain.setTargetAtTime(m ? 0 : .55, AC.currentTime, .05); $('b-mute').textContent = m ? 'SOUND OFF' : 'SOUND ON'; $('b-mute').setAttribute('aria-pressed', String(m)); }
+function setMute(m) { G.muted = m; store.set('muted', m); if (RADIO.el && !RADIO.node) RADIO.el.muted = m; if (AC) AC.master.gain.setTargetAtTime(m ? 0 : .55, AC.currentTime, .05); $('b-mute').textContent = m ? 'SOUND OFF' : 'SOUND ON'; $('b-mute').setAttribute('aria-pressed', String(m)); }
 function fmtClock(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = Math.floor(min % 60); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${String(m).padStart(2, '0')} ${ap}`; }
 function startGame() {
   if (document.activeElement) document.activeElement.blur();
   initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : .55;
-  setupPlayer(); resetPlayer(); startEngine(G.car); setMute(G.muted); G.cam = 0;
+  setupPlayer(); resetPlayer(); startEngine(G.car); setMute(G.muted); G.cam = 0; radioStart(G.car, true);
   G.money = 0; G.rides = 0; G.tips = 0; G.bails = 0; G.combo = 0; G.elapsed = 0; G.clock = G.night ? 21 * 60 + 30 : 15 * 60 + 30; G.rushShown = -1;
+  const sv = SAVE.data; // pick up where they left off
+  if (sv && sv.x != null) { player.x = sv.x; player.z = sv.z; toRoad(); G.money = sv.money || 0; G.rides = sv.rides || 0; G.tips = sv.tips || 0; if (sv.clock != null) G.clock = sv.clock; }
   traffic.length = 0; peds.length = 0; leaving.length = 0; R.offer = null; R.pickup = null; R.current = null; R.route = null; R.cool = 4; R.ring.visible = false; R.destRing.visible = false; arrow.visible = false;
   LAW.chase = null; LAW.hunt = null; LAW.wrongT = 0; CRUMBS.length = 0; G.fuel = store.get('fuel', 1); G.filling = false; G.gasBill = 0;
   updateChunks(player.x, player.z, 99);
   $('menu').hidden = true; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH; resize();
   $('phone').classList.add('off');
   camPos.set(player.x - Math.sin(player.heading) * 10, player.y + 5, player.z - Math.cos(player.heading) * 10);
+  if (sv && sv.x != null) setTimeout(() => { if (G.state === 'play' && !R.current) phone('Welcome back', 'Picking up where you left off', `On ${$('street').textContent}. $${Math.round(G.money)} this shift.`, '', '', null, false); }, 700);
   if (standing) { scene.remove(standing); standing = null; } driverModel.visible = true;
   G.state = 'play';
-  setTimeout(() => { if (G.state === 'play' && !R.current) phone('Leimert Park', 'You\'re online', 'Ride requests show up here. Accept the ones that pay right for the distance.', '', '', null, false); }, 600);
+  if (!(sv && sv.x != null)) setTimeout(() => { if (G.state === 'play' && !R.current) phone('Leimert Park', 'You\'re online', 'Ride requests show up here. Accept the ones that pay right for the distance.', '', '', null, false); }, 600);
 }
 function pauseShift() {
   if (G.state !== 'play') return;
@@ -2868,46 +3079,9 @@ function tick() {
   const ph = rushStatus(G.clock), target = ph.heavy ? 70 : NIGHT > .6 ? 18 : 30;
   for (let k = 0; k < 3 && traffic.length < target; k++) spawnTraffic(p.x, p.z);
   if (traffic.filter(c => c.kind === 2).length < 3) spawnTraffic(p.x, p.z, 2);
-  for (let i = traffic.length - 1; i >= 0; i--) {
-    const c = traffic[i];
-    if (c.chase || c.hunt) continue;
-    if (Math.hypot(c.x - p.x, c.z - p.z) > 650 || (traffic.length > target + 6 && Math.hypot(c.x - p.x, c.z - p.z) > 300)) { traffic.splice(i, 1); continue; }
-    if (c.knock > 0) { c.knock -= dt; c.x += c.kvx * dt; c.z += c.kvz * dt; c.kvx *= Math.exp(-2 * dt); c.kvz *= Math.exp(-2 * dt); c.ang += c.spin * dt; c.spin *= Math.exp(-2 * dt); if (c.knock <= 0) traffic.splice(i, 1); continue; }
-    let tv = c.vmax * (ph.heavy ? .55 : 1);
-    const reach = c.kind === 2 ? 15 : 11;
-    const ahead = (ox, oz, rad) => { const dx = ox - c.x, dz = oz - c.z, f = dx * c.hx + dz * c.hz, l = Math.abs(dx * c.hz - dz * c.hx); return f > 0 && f < rad && l < 2.6; };
-    if (ahead(p.x, p.z, reach + 5)) tv = 0;
-    for (const o of traffic) if (o !== c && ahead(o.x, o.z, reach)) { tv = Math.min(tv, o.v * .9); if (Math.hypot(o.x - c.x, o.z - c.z) < (o.kind === 2 || c.kind === 2 ? 11 : 7)) tv = 0; }
-    // red lights: stop short of the intersection
-    const endN = segNodes(c)[1], cl = SIGNODE.get(endN);
-    if (cl) { const st = sigState(cl, Math.abs(c.hz) > Math.abs(c.hx), G.elapsed), dist = segLen(c) - c.s; if (st === 2 || (st === 1 && dist > 12)) tv = Math.min(tv, Math.max(0, dist - 8) * .7); }
-    // buses stop at bus stops
-    if (c.kind === 2) {
-      if (c.wait > 0) { c.wait -= dt; tv = 0; }
-      else if (c.v > 2) { const l = BUS_GRID.get(gk(Math.floor(c.x / 50), Math.floor(c.z / 50))); if (l) for (const s of l) if (s !== c.lastStop && Math.hypot(s[0] - c.x, s[1] - c.z) < 13) { c.lastStop = s; c.wait = 5; break; } }
-    }
-    c.v += clamp(tv - c.v, -14 * dt, 5 * dt);
-    c.s += c.v * dt; let guard = 0;
-    while (c.s > segLen(c) && guard++ < 5) { if (!advanceCar(c)) { traffic.splice(i, 1); break; } }
-    if (traffic[i] !== c) continue;
-    placeCar(c); c.ang = Math.atan2(c.hx, c.hz);
-  }
+  stepTraffic(dt, p.x, p.z, ph.heavy, target);
   stepChase(dt);
-  const cnt = [0, 0, 0], M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), YA = new THREE.Vector3(0, 1, 0), V = new THREE.Vector3(), SV = new THREE.Vector3(1, 1, 1);
-  let copI = 0; const flash = Math.floor(now / 140) % 2;
-  for (const c of traffic) {
-    Q.setFromAxisAngle(YA, c.ang); V.set(c.x, H(c.x, c.z) + .02, c.z);
-    if (c.cop && copI < COP_POOL.length) {
-      const cp = COP_POOL[copI++]; cp.g.visible = true; cp.g.position.copy(V); cp.g.quaternion.copy(Q);
-      placeCopBeam(copI - 1, c, flash); const on = !!(c.chase || c.hunt); cp.red.color.setHex(on && flash ? 0xff2020 : 0x550000); cp.blue.color.setHex(on && !flash ? 0x2060ff : 0x000055);
-      continue;
-    }
-    const im = trafficMesh[c.kind], i = cnt[c.kind]++; if (i >= TCAP[c.kind]) continue;
-    M4.compose(V, Q, SV); im.setMatrixAt(i, M4); im.setColorAt(i, c.kind === 2 ? BUS_COLOR : TRAFFIC_COLORS[c.col]);
-  }
-  for (let i = copI; i < COP_BEAMS.length; i++) COP_BEAMS[i].visible = false;
-  for (; copI < COP_POOL.length; copI++) COP_POOL[copI].g.visible = false;
-  trafficMesh.forEach((im, k) => { im.count = Math.min(TCAP[k], cnt[k]); im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; });
+  renderTraffic(now);
   if (LAW.chase) { const d = Math.hypot(LAW.chase.c.x - p.x, LAW.chase.c.z - p.z); updateSiren(true, d); } else updateSiren(false, 0);
   // pedestrians: sidewalks and bus stops
   const pedTarget = ph.heavy ? 50 : NIGHT > .6 ? 24 : 38;
@@ -3008,9 +3182,18 @@ function drawMini(now) {
 let showroom = null;
 function menuFrame(dt) {
   if (!showroom) return;
-  menuSpin += dt * .25;
-  const { x, z, y } = showroom;
-  camera.position.set(x + Math.sin(menuSpin) * 11, y + 3.4, z + Math.cos(menuSpin) * 11); camera.lookAt(x, y + 1.2, z);
+  menuSpin += dt * .18;
+  const { x, z, y, nx, nz, dx, dz } = showroom, sway = Math.sin(menuSpin) * 3.5;
+  const wide = camera.aspect > 1.25 && !IS_TOUCH, port = camera.aspect < 1, back = port ? 13 : 10;
+  camera.position.set(x + nx * back + dx * (sway - 3), y + (port ? 3.4 : 2.6), z + nz * back + dz * (sway - 3));
+  const sh = wide ? 4.2 : port ? -1.4 : 0; // frame the car left of the menu column on wide screens
+  camera.lookAt(x - nx * 2 + dx * 1.5 + nz * sh, y + (port ? -2.4 : 1.3), z - nz * 2 + dz * 1.5 - nx * sh);
+  // busy Crenshaw behind the car
+  G.elapsed = (G.elapsed || 0) + dt; G.menuSig = (G.menuSig || 0) + dt; if (G.menuSig > .25) { G.menuSig = 0; updateSignalLamps(G.elapsed); }
+  for (let k = 0; k < 3 && traffic.length < 46; k++) menuSpawn(showroom);
+  if (traffic.length < 70) spawnTraffic(x, z);
+  stepTraffic(dt, x + nx * 400, z + nz * 400, false, 80);
+  renderTraffic(performance.now());
   if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
   sun.position.set(x + SUN_DIR.x * 220, y + SUN_DIR.y * 220, z + SUN_DIR.z * 220); sun.target.position.set(x, y, z);
   skyMesh.position.set(x, y, z); backdrop.position.set(x, y + 60, z); backdropN.position.copy(backdrop.position);
@@ -3024,11 +3207,12 @@ function refreshMenu() {
   if (!unlocked || G.car !== 'low') { G.topDown = false; $('t-top').setAttribute('aria-pressed', 'false'); }
   if (G.state !== 'menu') return;
   setupPlayer();
-  const sp = spawnPoint(); const x = sp.x, z = sp.z, y = H(x, z);
-  showroom = { x, z, y };
-  carModel.group.position.set(x, y, z); carModel.group.rotation.y = sp.heading + .6;
+  const sr = showroomSpot(); const x = sr.x, z = sr.z, y = sr.y;
+  if (!showroom || showroom.x !== x) traffic.length = 0;
+  showroom = sr;
+  carModel.group.position.set(x, y, z); carModel.group.rotation.y = sr.heading + .35;
   if (standing) scene.remove(standing);
-  standing = makePerson(CHARS[G.driver], false); standing.position.set(x + Math.cos(sp.heading) * 2.2, y, z - Math.sin(sp.heading) * 2.2); standing.rotation.y = sp.heading - .9; scene.add(standing);
+  standing = makePerson(CHARS[G.driver], false); standing.position.set(x + sr.nx * 2.1 - sr.dx * 1.2, y, z + sr.nz * 2.1 - sr.dz * 1.2); standing.rotation.y = Math.atan2(sr.nx, sr.nz) + .5; scene.add(standing);
   driverModel.visible = false;
   updateChunks(x, z, 99);
 }
@@ -3040,6 +3224,7 @@ function bindOpts(groupId, key) {
       $('t-day').setAttribute('aria-pressed', String(v !== 'night')); $('t-night').setAttribute('aria-pressed', String(v === 'night')); setNight(v === 'night'); return;
     }
     G[key] = v; $(groupId).querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', String(o === b))); refreshMenu();
+    if (key === 'car') radioStart(v);
   }));
 }
 
@@ -3084,10 +3269,13 @@ async function boot() {
   bindOpts('o-driver', 'driver'); bindOpts('o-car', 'car'); bindOpts('o-time', 'time');
   $('start').addEventListener('click', startGame);
   $('again').addEventListener('click', resumeShift); bindPauseOpts();
+  $('r-skip').addEventListener('click', () => radioNext()); $('r-back').addEventListener('click', () => radioBack());
   $('endshift').addEventListener('click', pauseShift);
   $('tomenu').addEventListener('click', () => { G.state = 'menu'; $('results').hidden = true; $('menu').hidden = false; refreshMenu(); });
   await loadStep(100, 'Ready');
-  G.state = 'menu'; $('load').hidden = true; $('menu').hidden = false;
+  G.state = 'menu'; $('load').hidden = true; $('gate').hidden = false;
+  try { $('g-email').value = localStorage.getItem('nar_email') || ''; } catch (e) { }
+  $('g-form').addEventListener('submit', submitGate);
   G.clock = 15 * 60 + 30; G.elapsed = 0; applyTime(G.clock);
   refreshMenu();
   tick();
