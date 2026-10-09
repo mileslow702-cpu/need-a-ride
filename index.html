@@ -1414,13 +1414,18 @@ const SONGS = {
 };
 // lowrider: Creep n Crawl first, then the rest from a shuffled bag so each gets equal play; sedan and truck run in a set order
 const PLAYLISTS = { low: { first: 'creep', bag: ['ringin', 'please', 'money'] }, bmr: { order: ['safe', 'pleeze', 'blackman'] }, suv: { order: ['hard4radio', 'hov97', 'frienddo'] } };
+const SFX_VOL = .3; // engine, sirens and effects stay under the music
 const RADIO = { el: null, list: null, hist: [], idx: -1, bag: [], node: null, gain: null };
 function radioInit() {
   if (RADIO.el) return;
-  const el = new Audio(); el.preload = 'auto'; el.crossOrigin = 'anonymous'; RADIO.el = el;
+  const el = new Audio(); el.preload = 'auto'; el.volume = 1; el.muted = !!G.muted; RADIO.el = el;
   el.addEventListener('ended', () => radioNext());
-  if (AC && !RADIO.node) { try { RADIO.node = AC.createMediaElementSource(el); RADIO.gain = AC.createGain(); RADIO.gain.gain.value = .85; RADIO.node.connect(RADIO.gain); RADIO.gain.connect(AC.master); } catch (e) { } }
+  el.addEventListener('error', () => setTimeout(() => radioNext(), 800));
+  // keep it playing: if the browser or a phone call pauses it, pick it back up
+  setInterval(radioKeepAlive, 2000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) radioKeepAlive(); });
 }
+function radioKeepAlive() { const el = RADIO.el; if (el && RADIO.cur && el.paused && !el.ended && !document.hidden) { const pr = el.play(); if (pr && pr.catch) pr.catch(() => { }); } }
 function radioPick(list) {
   if (list.order) return list.order[RADIO.hist.length % list.order.length];
   if (!RADIO.hist.length) return list.first;
@@ -1490,7 +1495,7 @@ async function submitGate(ev) {
   const email = cleanEmail($('g-email').value);
   if (!validEmail(email)) { $('g-err').textContent = 'Enter a real email address to play.'; $('g-email').focus(); return; }
   $('g-err').textContent = ''; $('g-go').disabled = true; $('g-go').textContent = 'LOADING…';
-  initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : .55;
+  initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : SFX_VOL;
   radioTheme();
   try { localStorage.setItem('nar_email', email); } catch (e) { }
   SAVE.email = email; SAVE.data = await loadProgress(email); applySave(SAVE.data);
@@ -2516,7 +2521,7 @@ function drawPeds(list) {
 let AC = null, ENG = null, skidGain = null, SIREN = null;
 function initAudio() {
   if (AC) return; try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
-  const master = AC.createGain(); master.gain.value = .55; master.connect(AC.destination); AC.master = master;
+  const master = AC.createGain(); master.gain.value = SFX_VOL; master.connect(AC.destination); AC.master = master;
   const noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate), nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
   const noise = () => { const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true; s.start(); return s; };
   // engine: two detuned saws + sub, soft-clipped, low-passed, with a cam "lope" on the volume
@@ -2544,6 +2549,7 @@ const ENGINE_OPTS = {
 async function startEngine(type) {
   if (!AC || !ENG) return;
   if (ENG.node) { ENG.node.disconnect(); ENG.node = null; }
+  if (IS_TOUCH) return; // phones: light engine synth keeps the audio thread free for the music
   if (ENG.wk === undefined) { try { await AC.audioWorklet.addModule('engine-worklet.js'); ENG.wk = true; } catch (e) { ENG.wk = false; } }
   if (!ENG.wk) return; // older browsers keep the simple synth
   const o = Object.assign({ intakeOpenReflectionFactor: .01, intakeClosedReflectionFactor: .95, exhaustOpenReflectionFactor: .01, exhaustClosedReflectionFactor: .95, straightPipeReflectionFactor: .01, outletReflectionFactor: .01 }, ENGINE_OPTS[type]);
@@ -3034,11 +3040,11 @@ let last = performance.now(), streetTimer = 0, miniCtx, camPos = new THREE.Vecto
 function setupHUD() { miniCtx = $('mini').getContext('2d'); }
 const CAMS = [{ name: 'CHASE', back: 9.5, up: 4.2, look: 5 }, { name: 'FAR', back: 17, up: 7.5, look: 8 }, { name: 'HIGH', back: 6, up: 22, look: 2 }, { name: 'HOOD', inside: true, ahead: .4, up: 1.55 }];
 function cycleCam() { G.cam = (G.cam + 1) % CAMS.length; pop('CAMERA: ' + CAMS[G.cam].name); if (carModel) carModel.group.visible = !CAMS[G.cam].inside; }
-function setMute(m) { G.muted = m; store.set('muted', m); if (RADIO.el && !RADIO.node) RADIO.el.muted = m; if (AC) AC.master.gain.setTargetAtTime(m ? 0 : .55, AC.currentTime, .05); $('b-mute').textContent = m ? 'SOUND OFF' : 'SOUND ON'; $('b-mute').setAttribute('aria-pressed', String(m)); }
+function setMute(m) { G.muted = m; store.set('muted', m); if (RADIO.el) RADIO.el.muted = m; if (AC) AC.master.gain.setTargetAtTime(m ? 0 : SFX_VOL, AC.currentTime, .05); $('b-mute').textContent = m ? 'SOUND OFF' : 'SOUND ON'; $('b-mute').setAttribute('aria-pressed', String(m)); }
 function fmtClock(min) { min = ((min % 1440) + 1440) % 1440; let h = Math.floor(min / 60), m = Math.floor(min % 60); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${String(m).padStart(2, '0')} ${ap}`; }
 function startGame() {
   if (document.activeElement) document.activeElement.blur();
-  initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : .55;
+  initAudio(); if (AC && AC.state === 'suspended') AC.resume(); if (AC) AC.master.gain.value = G.muted ? 0 : SFX_VOL;
   setupPlayer(); resetPlayer(); startEngine(G.car); setMute(G.muted); G.cam = 0; radioStart(G.car, true);
   G.money = 0; G.rides = 0; G.tips = 0; G.bails = 0; G.combo = 0; G.elapsed = 0; G.clock = G.night ? 21 * 60 + 30 : 15 * 60 + 30; G.rushShown = -1;
   const sv = SAVE.data; // pick up where they left off
@@ -3224,7 +3230,6 @@ function bindOpts(groupId, key) {
       $('t-day').setAttribute('aria-pressed', String(v !== 'night')); $('t-night').setAttribute('aria-pressed', String(v === 'night')); setNight(v === 'night'); return;
     }
     G[key] = v; $(groupId).querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', String(o === b))); refreshMenu();
-    if (key === 'car') radioStart(v);
   }));
 }
 
