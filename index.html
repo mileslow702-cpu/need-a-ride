@@ -537,7 +537,7 @@ const isExcl = m => (m & 255) >= 200;
 const isBeach = m => { const b = m & 255; return b >= 60 && b < 200; };
 
 /* ---------------- textures (all drawn here, original art) ---------------- */
-const ATW = 4096, ATH = 2048, CELL = 256, ACOLS = 16, AROWS = 8;
+const ATW = 4096, ATH = 3072, CELL = 256, ACOLS = 16, AROWS = 12;
 const atlasC = document.createElement('canvas'); atlasC.width = ATW; atlasC.height = ATH;
 const emisC = document.createElement('canvas'); emisC.width = ATW; emisC.height = ATH;
 const ax = atlasC.getContext('2d'), ex = emisC.getContext('2d');
@@ -690,7 +690,9 @@ function buildAtlas(words) {
   for (let i = 0; i < 48; i++) {
     if (i === C.church) { drawChurch(i, rnd); continue; }
     const w = i === 0 ? 'OPEN' : SIGN_WORDS[i] || 'OPEN';
-    if (i > 0 && FOOD_WORDS.has(w)) { drawFoodSpot(i, w, rnd); STYLED.add(i); }
+    if (i > 0 && w === 'CAFE') { drawCafe(i, rnd); STYLED.add(i); }
+    else if (i > 0 && (w === 'CLOTHING' || w === 'SHOES')) { drawBoutique(i, w, rnd); STYLED.add(i); }
+    else if (i > 0 && FOOD_WORDS.has(w)) { drawFoodSpot(i, w, rnd); STYLED.add(i); }
     else if (i > 0 && !SIGN_STYLE[w] && rnd() < .7) { drawStyled(i, w, rnd); STYLED.add(i); }
     else drawStore(i, w, rnd, { sign: SIGN_STYLE[w], small: w === 'DISPENSARY' ? '21+' : undefined });
   }
@@ -706,7 +708,7 @@ function buildAtlas(words) {
   drawMarket(C.market, rnd, 'MARKET ST'); drawMarket(C.market + 1, rnd, 'BOUTIQUE');
   drawApts(C.aptSide, rnd, false);
   { const [x, y] = cellXY(C.upper); ax.fillStyle = '#f2efe8'; ax.fillRect(x, y, CELL, CELL); noise(ax, x, y, CELL, CELL, 1400, .1, rnd); for (let c = 0; c < 3; c++) { ax.fillStyle = '#34495e'; ax.fillRect(x + 22 + c * 80, y + 80, 52, 90); ex.fillStyle = rnd() < .5 ? '#ffcf7a' : '#000'; ex.fillRect(x + 22 + c * 80, y + 80, 52, 90); } }
-  skinAtlas(); drawBrands(); drawMurals(); drawHomes(); drawVernonCorner(); drawSchoolStyles();
+  skinAtlas(); drawBrands(); drawMurals(); drawHomes(); drawVernonCorner(); drawSchoolStyles(); drawCivic();
 }
 function texFromCanvas(c, rep) { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
 function roadTex(kind) {
@@ -2590,15 +2592,17 @@ function buildFlorence() {
     let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9; for (let i = 0; i < flat.length; i += 2) { x0 = Math.min(x0, flat[i]); x1 = Math.max(x1, flat[i]); z0 = Math.min(z0, flat[i + 1]); z1 = Math.max(z1, flat[i + 1]); }
     const stones = [], trees = [], rnd = mulberry32(x0 | 0);
     // rows of stones in sections, sampled across the whole grounds
-    for (let t = 0; t < 30000 && stones.length < 7000; t++) {
+    const cap = (x1 - x0) * (z1 - z0) > 600000 ? 3500 : 1200;
+    for (let t = 0; t < 30000 && stones.length < cap; t++) {
       const jx = x0 + Math.round(rnd() * (x1 - x0) / 7) * 7 + (rnd() - .5) * .8, jz = z0 + Math.round(rnd() * (z1 - z0) / 4.5) * 4.5;
       if (!pip(jx, jz, flat) || onRoad(jx, jz, 4) || inAnyBuilding(jx, jz, 2) || ((jx / 70 | 0) + (jz / 60 | 0)) % 5 === 0) continue;
       if (rnd() < .03) trees.push([jx, jz]); else stones.push([jx, jz, rnd()]);
     }
     const sg = new THREE.BoxGeometry(.7, .8, .18); sg.translate(0, .35, 0);
-    const im = new THREE.InstancedMesh(sg, new THREE.MeshLambertMaterial({ color: 0xffffff }), stones.length), cols = ['#cfcac0', '#b9b4aa', '#8f8a84', '#e2ded4'].map(h => new THREE.Color(h));
+    const sgc = sg.clone(); sgc.boundingSphere = new THREE.Sphere(new THREE.Vector3((x0 + x1) / 2, H((x0 + x1) / 2, (z0 + z1) / 2), (z0 + z1) / 2), Math.hypot(x1 - x0, z1 - z0) / 2 + 10);
+    const im = new THREE.InstancedMesh(sgc, new THREE.MeshLambertMaterial({ color: 0xffffff }), stones.length), cols = ['#cfcac0', '#b9b4aa', '#8f8a84', '#e2ded4'].map(h => new THREE.Color(h));
     stones.forEach(([x, z, r], i) => { const s = .8 + r * .7; M4.compose(V.set(x, H(x, z), z), Q.identity(), SV.set(s, s * (r > .9 ? 2.4 : 1), s)); im.setMatrixAt(i, M4); im.setColorAt(i, cols[(r * 40 | 0) % 4]); });
-    im.frustumCulled = false; scene.add(im);
+    im.userData.cull = true; scene.add(im);
     if (trees.length) { const t1 = new THREE.InstancedMesh(treeTrunkGeo, palmTrunkMat, trees.length), t2 = new THREE.InstancedMesh(treeTopGeo, treeMat, trees.length); trees.forEach(([x, z], i) => { const s = 1.2 + (i % 3) * .25; M4.compose(V.set(x, H(x, z) - .2, z), Q.identity(), SV.set(s, s * 1.3, s)); t1.setMatrixAt(i, M4); t2.setMatrixAt(i, M4); t2.setColorAt(i, TREE_COLS[(i + 1) % 4]); }); [t1, t2].forEach(m => { m.castShadow = true; m.frustumCulled = false; scene.add(m); }); }
     // iron fence along the boundary where it faces a street
     const P = [], U = [], I = [], n = flat.length / 2;
@@ -2636,6 +2640,200 @@ function buildForumPylon() {
 function stepForumScreen(dt) {
   if (!FORUM_SCREEN) return; const F = FORUM_SCREEN; F.t -= dt; if (F.t > 0) return; F.t = 6; F.i = (F.i + 1) % ADS.length;
   const [u0, v0, u1, v1] = adUV(F.i); F.map.repeat.set(u1 - u0, v1 - v0); F.map.offset.set(u0, v0);
+}
+
+/* ---------------- the Jungle (Baldwin Village), civic buildings, theatres, malls, cafes, Culver + Venice ---------------- */
+const CIV = { jungleA: 125, jungleB: 126, garages: 127, jungleC: 128, fire: 129, police: 130, cinema: 131, mall: 132, hotel: 133, boardwalk: 135, studio: 136 };
+Object.assign(BRANDS, {
+  fire: { front: CIV.fire, side: C.brick, full: true },
+  police: { front: CIV.police, side: C.concrete, full: true },
+  cinema: { front: CIV.cinema, side: C.concrete, full: true },
+  mall: { front: CIV.mall, side: C.concrete, full: true, tiles: [C.concrete] },
+  hotel: { front: CIV.hotel, side: CIV.hotel, full: true, tiles: [CIV.hotel] }
+});
+for (const k of ['fire', 'police', 'cinema', 'mall', 'hotel']) BRAND_BY_CELL[BRANDS[k].front] = BRANDS[k];
+const JUNGLE_CELLS = [CIV.jungleA, CIV.jungleB, CIV.jungleC];
+function inJungle(x, z) { return EXTRAS && EXTRAS.jungle && pip(x, z, EXTRAS.jungle); }
+function nearBoardwalk(x, z, d) { const L = EXTRAS && EXTRAS.boardwalk; if (!L) return false; for (let i = 0; i < L.length - 1; i++) { const [ax0, az0] = L[i], [bx0, bz0] = L[i + 1], ex = bx0 - ax0, ez = bz0 - az0, l2 = ex * ex + ez * ez, t = clamp(((x - ax0) * ex + (z - az0) * ez) / l2, 0, 1); if (Math.hypot(ax0 + ex * t - x, az0 + ez * t - z) < d) return true; } return false; }
+const STUDIO = { x: -2435, z: -3562, r: 210 };
+function inStudio(x, z) { return Math.hypot(x - STUDIO.x, z - STUDIO.z) < STUDIO.r; }
+
+function drawCivic() {
+  const rnd = mulberry32(90008), g = ax, W = CELL;
+  const dish = (x, y, s = 1) => { g.fillStyle = '#d8d8d4'; g.beginPath(); g.ellipse(x, y, 11 * s, 9 * s, -.5, 0, 7); g.fill(); g.fillStyle = '#9a9a94'; g.beginPath(); g.ellipse(x + 2, y + 1, 6 * s, 5 * s, -.5, 0, 7); g.fill(); g.fillStyle = '#555'; g.fillRect(x - 1, y, 2, 14 * s); };
+  const louver = (x, y, w, h) => { g.fillStyle = '#f2f0ea'; g.fillRect(x - 3, y - 3, w + 6, h + 6); g.fillStyle = '#2b3846'; g.fillRect(x, y, w, h); for (let k = 0; k < h; k += 5) { g.fillStyle = 'rgba(230,230,225,.85)'; g.fillRect(x, y + k, w, 2.5); } ex.fillStyle = rnd() < .55 ? '#ffcf7a' : '#000'; ex.fillRect(x, y, w, h); };
+  // Jungle A: tan two-story, open walkway with railing upstairs, carport underneath on one side
+  let [x, y] = cellXY(CIV.jungleA); stucco(x, y, '#cdb79a', rnd);
+  g.fillStyle = '#b39c80'; g.fillRect(x, y + 112, W, 14); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y + 126, W, 5);
+  for (let c = 0; c < 3; c++) { louver(x + 18 + c * 82, y + 40, 48, 50); if (rnd() < .5) { g.fillStyle = '#d8d8d2'; g.fillRect(x + 30 + c * 82, y + 74, 24, 14); } }
+  g.fillStyle = '#1b1b1b'; for (let k = 0; k < 64; k++) g.fillRect(x + k * 4, y + 98, 1.5, 14); g.fillRect(x, y + 96, W, 3);
+  g.fillStyle = '#2a2a2a'; g.fillRect(x + 140, y + 140, 116, 116); for (const px of [140, 196, 252]) { g.fillStyle = '#b39c80'; g.fillRect(x + px - 4, y + 130, 8, 126); }
+  louver(x + 22, y + 150, 46, 50); louver(x + 82, y + 150, 40, 50);
+  g.fillStyle = '#1b1b1b'; for (let k = 0; k < 32; k++) g.fillRect(x + k * 4, y + 214, 1.5, 42); g.fillRect(x, y + 212, 130, 3);
+  dish(x + 210, y + 22); dish(x + 236, y + 40, .8);
+  // Jungle B: blue-grey courtyard building, lava-rock base, gold awning over the gate, script name
+  [x, y] = cellXY(CIV.jungleB); stucco(x, y, '#7f97a3', rnd);
+  g.fillStyle = '#e9e7e0'; g.fillRect(x + 70, y + 26, 92, 54); louver(x + 76, y + 32, 80, 44); louver(x + 180, y + 34, 56, 40); louver(x + 14, y + 34, 44, 40);
+  g.save(); g.translate(x + 120, y + 106); g.fillStyle = '#e9dcae'; g.font = 'italic 700 26px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('The Bahamas', -10, 0); g.font = FONT(22); g.fillText('3942', 92, 0); g.restore();
+  g.fillStyle = '#c9a24a'; g.fillRect(x + 66, y + 128, 120, 14); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 66, y + 142, 120, 4);
+  for (let k = 0; k < 260; k++) { g.fillStyle = ['#3a2e2a', '#5a4a3e', '#2a2420', '#6b5a4a'][k % 4]; g.beginPath(); g.ellipse(x + rnd() * W, y + 150 + rnd() * 106, 4 + rnd() * 5, 3 + rnd() * 3, rnd() * 3, 0, 7); g.fill(); }
+  g.fillStyle = '#1b1b1b'; g.fillRect(x + 84, y + 150, 84, 106); g.fillStyle = '#3aa0b8'; g.fillRect(x + 92, y + 196, 68, 20); for (let k = 0; k < 14; k++) { g.fillStyle = '#111'; g.fillRect(x + 86 + k * 6, y + 150, 2, 106); }
+  louver(x + 196, y + 160, 46, 44);
+  // Jungle C: white/grey two-story with stair tower and dishes
+  [x, y] = cellXY(CIV.jungleC); stucco(x, y, '#e4e2dc', rnd);
+  g.fillStyle = '#9aa0a6'; g.fillRect(x + 170, y, 86, W); stucco(x + 172, y, '#aab0b4', rnd, 82, W);
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) louver(x + 20 + c * 76, y + 40 + r * 108, 52, 52);
+  g.fillStyle = '#f4f4f0'; for (let k = 0; k < 6; k++) g.fillRect(x + 180, y + 40 + k * 34, 64, 4); // stair landings
+  g.fillStyle = '#1b1b1b'; for (let k = 0; k < 44; k++) g.fillRect(x + k * 4, y + 216, 1.5, 40); g.fillRect(x, y + 214, 172, 3);
+  dish(x + 150, y + 20); dish(x + 130, y + 36, .8); dish(x + 210, y + 14, .9);
+  // garage row off the alley: white roll-up doors under brown shingle
+  [x, y] = cellXY(CIV.garages); stucco(x, y, '#d2b48e', rnd); g.fillStyle = '#6b4a2e'; g.fillRect(x, y, W, 46); for (let r = 0; r < 4; r++) { g.fillStyle = r % 2 ? '#5a3e26' : '#7a5636'; g.fillRect(x, y + r * 11, W, 6); }
+  for (let k = 0; k < 2; k++) { const gx = x + 14 + k * 124; g.fillStyle = '#f2f2ee'; g.fillRect(gx, y + 80, 106, 176); g.fillStyle = '#d8d8d2'; for (let j = 0; j < 7; j++) g.fillRect(gx, y + 88 + j * 24, 106, 3); }
+  // fire station: brick with two red-framed glass bay doors, lit at night
+  [x, y] = cellXY(CIV.fire); drawSide(CIV.fire, 'brick', rnd);
+  g.fillStyle = '#e9e2d0'; g.fillRect(x, y, W, 46); neonText('FIRE STATION', x + 128, y + 24, 34, '#b8322a', '#ff6a5a');
+  for (let k = 0; k < 2; k++) { const bx = x + 14 + k * 124; g.fillStyle = '#c0392b'; g.fillRect(bx - 4, y + 72, 114, 184); glass(bx, y + 78, 106, 178, 3, '#fff2d0'); g.fillStyle = 'rgba(192,57,43,.9)'; for (let j = 1; j < 5; j++) g.fillRect(bx, y + 78 + j * 35, 106, 3); g.fillStyle = 'rgba(200,40,40,.55)'; g.fillRect(bx + 6, y + 190, 94, 50); }
+  g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(x + 128, y + 60, 9, 0, 7); g.fill();
+  // police station: concrete, blue band, star, glass lobby
+  [x, y] = cellXY(CIV.police); drawSide(CIV.police, 'concrete', rnd);
+  g.fillStyle = '#123f7a'; g.fillRect(x, y + 40, W, 54); neonText('POLICE', x + 150, y + 67, 40, '#fff', '#cfe6ff');
+  g.save(); g.translate(x + 46, y + 67); g.fillStyle = '#c9972b'; g.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 9 : 22, a = k / 10 * Math.PI * 2 - Math.PI / 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill(); g.restore();
+  glass(x + 60, y + 130, 136, 126, 4, '#e6f0ff'); for (const wx of [14, 210]) glass(x + wx, y + 130, 34, 80, 1);
+  // cinema / theatre: marquee with bulbs and poster cases
+  [x, y] = cellXY(CIV.cinema); stucco(x, y, '#3a2a3e', rnd);
+  g.fillStyle = '#f4f1ea'; g.fillRect(x + 10, y + 26, W - 20, 70); g.fillStyle = '#1b1b1b'; g.font = FONT(30); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('NOW SHOWING', x + 128, y + 48); g.font = FONT(22); g.fillText('7:00  ·  9:45  ·  LATE SHOW', x + 128, y + 78);
+  ex.fillStyle = '#fff6d8'; ex.fillRect(x + 10, y + 26, W - 20, 70);
+  for (let k = 0; k < 32; k++) { const bx = x + 12 + k * 7.6; for (const by of [22, 100]) { g.fillStyle = '#ffd36a'; g.beginPath(); g.arc(bx, y + by, 2.4, 0, 7); g.fill(); ex.fillStyle = '#ffd36a'; ex.beginPath(); ex.arc(bx, y + by, 3, 0, 7); ex.fill(); } }
+  g.fillStyle = '#7a1f2a'; g.fillRect(x, y + 104, W, 16);
+  for (let k = 0; k < 3; k++) { const px = x + 14 + k * 82; g.fillStyle = '#c9a24a'; g.fillRect(px - 3, y + 130, 64, 92); g.fillStyle = ['#2c5f8a', '#c0392b', '#1e7a46'][k]; g.fillRect(px, y + 133, 58, 86); g.fillStyle = 'rgba(255,255,255,.8)'; g.font = FONT(16); g.fillText(['ACTION', 'DRAMA', 'COMEDY'][k], px + 29, y + 200); ex.fillStyle = '#ffe9b0'; ex.fillRect(px, y + 133, 58, 86); }
+  glass(x + 30, y + 228, W - 60, 28, 6, '#ffd98a');
+  // mall / department store: tall panel wall with a glass entry and canopy
+  [x, y] = cellXY(CIV.mall); stucco(x, y, '#e8e0cc', rnd); g.fillStyle = 'rgba(0,0,0,.08)'; for (let k = 0; k < 4; k++) g.fillRect(x + k * 64, y, 2, W);
+  g.fillStyle = '#c9b48a'; g.fillRect(x, y + 20, W, 12); glass(x + 56, y + 150, 144, 106, 4, '#fff2d0'); g.fillStyle = '#2b2b2b'; g.fillRect(x + 46, y + 136, 164, 14); g.fillStyle = '#c0392b'; g.fillRect(x + 80, y + 66, 96, 40); neonText('SALE', x + 128, y + 87, 30, '#fff', '#fff');
+  // hotel flatiron: red brick, arched windows, vertical blade sign
+  [x, y] = cellXY(CIV.hotel); drawSide(CIV.hotel, 'brick', rnd);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const wx = x + 16 + c * 60, wy = y + 16 + r * 58; g.fillStyle = '#e9dcc0'; g.beginPath(); g.moveTo(wx - 3, wy + 46); g.lineTo(wx - 3, wy + 14); g.arc(wx + 18, wy + 14, 21, Math.PI, 0); g.lineTo(wx + 39, wy + 46); g.fill(); g.fillStyle = '#2b3846'; g.beginPath(); g.moveTo(wx, wy + 44); g.lineTo(wx, wy + 14); g.arc(wx + 18, wy + 14, 18, Math.PI, 0); g.lineTo(wx + 36, wy + 44); g.fill(); ex.fillStyle = rnd() < .6 ? '#ffcf7a' : '#000'; ex.fillRect(wx, wy + 4, 36, 40); }
+  g.fillStyle = '#1b1b1b'; g.fillRect(x + 116, y + 10, 24, 200); for (let k = 0; k < 5; k++) { g.fillStyle = '#ffe9b0'; g.font = FONT(30); g.textAlign = 'center'; g.fillText('HOTEL'[k], x + 128, y + 40 + k * 36); ex.fillStyle = '#ffe9b0'; ex.font = FONT(30); ex.textAlign = 'center'; ex.fillText('HOTEL'[k], x + 128, y + 40 + k * 36); }
+  // Venice boardwalk shop: open front, tees and shades, hand-painted
+  [x, y] = cellXY(CIV.boardwalk); stucco(x, y, LA_WALLS[3], rnd);
+  g.fillStyle = '#fff'; g.font = FONT(30); g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#1b1b1b'; g.strokeText('T-SHIRTS · SHADES · GIFTS', x + 128, y + 54); g.fillStyle = '#ffd23f'; g.fillText('T-SHIRTS · SHADES · GIFTS', x + 128, y + 54);
+  g.fillStyle = '#2a2a2a'; g.fillRect(x + 10, y + 90, W - 20, 166); ex.fillStyle = '#ffd98a'; ex.fillRect(x + 10, y + 90, W - 20, 166);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 9; c++) { g.fillStyle = ['#e94f8a', '#2bb3a3', '#f2b134', '#7b4fd1', '#e8603c', '#3c8dde', '#fff'][(r * 9 + c) % 7]; g.fillRect(x + 16 + c * 26, y + 98 + r * 50, 22, 30); g.beginPath(); g.moveTo(x + 16 + c * 26, y + 98 + r * 50); g.lineTo(x + 9 + c * 26, y + 108 + r * 50); g.lineTo(x + 16 + c * 26, y + 112 + r * 50); g.fill(); }
+  // studio soundstage wall
+  [x, y] = cellXY(CIV.studio); stucco(x, y, '#ece4d2', rnd); g.fillStyle = '#2c5fb0'; g.fillRect(x, y + 40, W, 8);
+  g.fillStyle = '#d8cfba'; g.fillRect(x + 60, y + 100, 136, 156); g.fillStyle = 'rgba(0,0,0,.12)'; for (let k = 0; k < 8; k++) g.fillRect(x + 60, y + 108 + k * 19, 136, 2);
+  g.fillStyle = '#1b1b1b'; g.font = FONT(44); g.textAlign = 'center'; g.fillText('STAGE ' + (3 + Math.floor(rnd() * 20)), x + 128, y + 80);
+  for (const c of [CIV.jungleA, CIV.jungleB, CIV.jungleC, CIV.garages, CIV.fire, CIV.police, CIV.cinema, CIV.mall, CIV.hotel, CIV.boardwalk, CIV.studio]) weatherCell(c, rnd, { noCap: true, streaks: 3 });
+}
+// coffee shop and clothing store fronts (replace the category sign cells for CAFE / CLOTHING / SHOES)
+function drawCafe(i, rnd) {
+  const [x, y] = cellXY(i), g = ax, W = CELL, wall = ['#2b2b33', '#f4f2ec', '#3a5a4a', '#7a4a2e'][Math.floor(rnd() * 4)]; stucco(x, y, wall, rnd);
+  const dark = contrastOn(wall) === '#fff';
+  g.fillStyle = '#5a3a22'; g.fillRect(x + 70, y + 20, 116, 70); g.fillStyle = '#f4e9d2'; g.beginPath(); g.moveTo(x + 104, y + 36); g.lineTo(x + 152, y + 36); g.lineTo(x + 146, y + 76); g.lineTo(x + 110, y + 76); g.fill(); g.strokeStyle = '#f4e9d2'; g.lineWidth = 5; g.beginPath(); g.arc(x + 154, y + 54, 9, -1.4, 1.4); g.stroke();
+  g.strokeStyle = 'rgba(244,233,210,.7)'; g.lineWidth = 3; for (const k of [116, 128, 140]) { g.beginPath(); g.moveTo(x + k, y + 30); g.quadraticCurveTo(x + k + 6, y + 24, x + k, y + 16); g.stroke(); }
+  neonText('COFFEE', x + 128, y + 108, 30, dark ? '#ffd36a' : '#3a2a1e', '#ffd36a');
+  g.fillStyle = '#1e5a4a'; g.fillRect(x + 8, y + 126, W - 16, 18); for (let k = 0; k < 12; k++) { g.fillStyle = k % 2 ? '#1e5a4a' : '#f4f1ea'; g.fillRect(x + 8 + k * 20, y + 144, 20, 8); }
+  glass(x + 12, y + 156, W - 24, 100, 4, '#ffd98a');
+  g.fillStyle = '#1b1b1b'; g.fillRect(x + 18, y + 196, 40, 56); g.fillStyle = '#f4f4f0'; g.font = FONT2(9, 700); g.textAlign = 'center'; g.fillText('TODAY', x + 38, y + 206); for (let r = 0; r < 4; r++) g.fillRect(x + 24, y + 214 + r * 9, 28, 2);
+  for (const tx of [96, 186]) { g.fillStyle = '#2b2b2b'; g.fillRect(x + tx, y + 232, 34, 4); g.fillRect(x + tx + 15, y + 236, 4, 18); }
+  weatherCell(i, rnd, { noCap: true, streaks: 2 });
+}
+function drawBoutique(i, word, rnd) {
+  const [x, y] = cellXY(i), g = ax, W = CELL, wall = ['#111', '#f4f2ec', '#e94f8a', '#c9b08a', '#2b3846'][Math.floor(rnd() * 5)], ink = contrastOn(wall);
+  stucco(x, y, wall, rnd);
+  g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, word, x + 128, y + 60, 220, 46, FONT); ex.fillStyle = ink === '#fff' ? '#fff' : '#ffe9b0'; ex.font = g.font; ex.textAlign = 'center'; ex.textBaseline = 'middle'; ex.fillText(word, x + 128, y + 60);
+  g.fillStyle = ink; g.fillRect(x + 60, y + 88, 136, 2);
+  g.fillStyle = '#1b1b1b'; g.fillRect(x + 8, y + 110, W - 16, 146); glass(x + 12, y + 114, W - 24, 138, 2, '#fff2d0');
+  // mannequins in fits
+  for (let k = 0; k < 4; k++) { const mx = x + 36 + k * 60, col = ['#c0392b', '#f2c14e', '#2c5f8a', '#e8e0cc', '#1e7a46', '#6d2a8a'][Math.floor(rnd() * 6)]; g.fillStyle = '#e9e2d6'; g.beginPath(); g.arc(mx, y + 140, 7, 0, 7); g.fill(); g.fillStyle = col; g.fillRect(mx - 12, y + 148, 24, 38); g.fillStyle = rnd() < .5 ? '#1b1b1b' : '#5d6d7e'; g.fillRect(mx - 10, y + 186, 9, 40); g.fillRect(mx + 1, y + 186, 9, 40); g.fillStyle = '#f4f4f4'; g.fillRect(mx - 11, y + 226, 10, 5); g.fillRect(mx + 1, y + 226, 10, 5); }
+  g.fillStyle = '#fff'; g.font = FONT2(11, 700); g.fillText('NEW ARRIVALS', x + 128, y + 246);
+  weatherCell(i, rnd, { noCap: true, streaks: 2 });
+}
+
+/* buildings on top of a drivable street (the mall bridge over the road): lift them so you can drive underneath */
+function overRoad(b) {
+  let hit = false;
+  forSegs((b.bb[0] + b.bb[2]) / 2, (b.bb[1] + b.bb[3]) / 2, Math.max(b.bb[2] - b.bb[0], b.bb[3] - b.bb[1]) / 2 + 5, id => {
+    if (hit) return; const c = WCLS[segW[id]]; if (c < 2 || c > 5) return;
+    const a = segA[id], e = segB[id];
+    for (let t = .1; t < .95 && !hit; t += .2) { const x = lerp(NX[a], NX[e], t), z = lerp(NZ[a], NZ[e], t); if (x > b.bb[0] && x < b.bb[2] && z > b.bb[1] && z < b.bb[3] && pip(x, z, b.pts)) hit = true; }
+  });
+  return hit;
+}
+
+/* Culver City Stairs: stone steps with posts and cables up the hill, retaining wall at the base, dry brush on the slopes */
+function buildCulverStairs() {
+  const S = EXTRAS.stairs; if (!S) return;
+  const [bx, bz] = S[0], [tx, tz] = S[1], L = Math.hypot(tx - bx, tz - bz), ang = Math.atan2(tx - bx, tz - bz), fx = (tx - bx) / L, fz = (tz - bz) / L, rx = fz, rz = -fx;
+  const n = Math.round(L / .9), M4 = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), ang), V = new THREE.Vector3(), S1 = new THREE.Vector3(1, 1, 1);
+  const stone = new THREE.InstancedMesh(new THREE.BoxGeometry(3.2, .45, 1.1), new THREE.MeshLambertMaterial({ color: 0xc9bea6 }), n);
+  for (let k = 0; k < n; k++) { const t = k / (n - 1), x = bx + fx * L * t, z = bz + fz * L * t; M4.compose(V.set(x, H(x, z) + .15, z), Q, S1); stone.setMatrixAt(k, M4); stone.setColorAt(k, new THREE.Color().setHSL(.11, .18, .66 + (k % 5) * .02)); }
+  stone.receiveShadow = stone.castShadow = true; stone.frustumCulled = false; scene.add(stone);
+  // posts every few metres on both sides, cables between
+  const posts = [], cable = [];
+  for (const s of [-1, 1]) { let prev = null; for (let d = 0; d <= L; d += 4.5) { const x = bx + fx * d + rx * s * 2.1, z = bz + fz * d + rz * s * 2.1, y = H(x, z); posts.push([x, y, z]); if (prev) for (const h of [.6, 1.1]) cable.push(prev[0], prev[1] + h, prev[2], x, y + h, z); prev = [x, y, z]; } }
+  const pg = new THREE.CylinderGeometry(.05, .05, 1.3, 6); pg.translate(0, .65, 0);
+  const pm = new THREE.InstancedMesh(pg, new THREE.MeshLambertMaterial({ color: 0xe8e8e4 }), posts.length); posts.forEach(([x, y, z], i) => { M4.compose(V.set(x, y, z), Q, S1); pm.setMatrixAt(i, M4); }); pm.frustumCulled = false; scene.add(pm);
+  const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cable, 3)); const cl = new THREE.LineSegments(cg, new THREE.LineBasicMaterial({ color: 0x9aa0a6 })); cl.frustumCulled = false; scene.add(cl);
+  // concrete retaining wall where the stairs meet the street
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(22, 1.4, 1.2), new THREE.MeshLambertMaterial({ color: 0xbdb5a2 })); wall.position.set(bx - fx * 1, H(bx, bz) + .5, bz - fz * 1); wall.rotation.y = ang; scene.add(wall);
+  // dry brush and scrub across the hillside
+  const rnd = mulberry32(3624), bush = [];
+  for (let t = 0; t < 4000 && bush.length < 900; t++) {
+    const x = -1300 + rnd() * 1400, z = -4100 + rnd() * 1000; if (Math.hypot(x + 700, z + 3650) > 520 || isWater(maskAt(x, z)) || onRoad(x, z, 3) || inAnyBuilding(x, z, 2) || Math.abs((x - bx) * rx + (z - bz) * rz) < 4 && (x - bx) * fx + (z - bz) * fz > -2 && (x - bx) * fx + (z - bz) * fz < L + 2) continue;
+    bush.push([x, z, .5 + rnd() * .9, rnd()]);
+  }
+  const bg = new THREE.IcosahedronGeometry(1.2, 0); bg.scale(1, .6, 1); bg.translate(0, .4, 0);
+  const bm = new THREE.InstancedMesh(bg, new THREE.MeshLambertMaterial({ color: 0xffffff }), bush.length), cols = ['#7a7a44', '#8a7a52', '#5f6b3a', '#a08a5a', '#6b5f3a'].map(h => new THREE.Color(h));
+  bush.forEach(([x, z, s, r], i) => { M4.compose(V.set(x, H(x, z) - .1, z), Q, SV1.set(s * 1.4, s, s * 1.4)); bm.setMatrixAt(i, M4); bm.setColorAt(i, cols[(r * 5) | 0]); }); bm.castShadow = true; bm.frustumCulled = false; scene.add(bm);
+  PLACES.lm.stairs_base = [bx - fx * 8, bz - fz * 8];
+}
+const SV1 = new THREE.Vector3();
+
+/* Venice: the VENICE sign over Windward Ave, Muscle Beach, boardwalk vendor canopies */
+function buildVenice() {
+  // sign across Windward Ave
+  const wn = NAMES.indexOf('Windward Avenue'); let seg = null, bd = 1e9;
+  forSegs(-8987, -289, 120, id => { if (WNAME[segW[id]] !== wn) return; const d = segDist(-8987, -289, id)[0]; if (d < bd) { bd = d; seg = id; } });
+  if (seg != null) {
+    const A = segA[seg], B = segB[seg], L = Math.hypot(NX[B] - NX[A], NZ[B] - NZ[A]) || 1, dx = (NX[B] - NX[A]) / L, dz = (NZ[B] - NZ[A]) / L, ns = nearestSeg(-8987, -289, 120), hw = WHW[segW[seg]] + 3.5;
+    const x = lerp(NX[A], NX[B], ns.t), z = lerp(NZ[A], NZ[B], ns.t), y = H(x, z), g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(dx, dz);
+    const steel = new THREE.MeshLambertMaterial({ color: 0x2b2b2b });
+    for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.18, .22, 11, 8), steel); p.position.set(s * hw, 5.5, 0); g.add(p); addStatic({ t: 'c', x: x + Math.cos(-g.rotation.y) * s * hw, z: z + Math.sin(-g.rotation.y) * s * hw, r: .6 }); }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, .25, .25), steel); bar.position.y = 10.6; g.add(bar);
+    const [c, q] = cnv(1024, 192); q.clearRect(0, 0, 1024, 192); q.font = '700 170px "Times New Roman", Georgia, serif'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = '#f4f4f0'; q.strokeStyle = '#1b1b1b'; q.lineWidth = 10; q.strokeText('VENICE', 512, 100); q.fillText('VENICE', 512, 100);
+    const t = texFromCanvas(c), m = new THREE.MeshLambertMaterial({ map: t, transparent: true, alphaTest: .4, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0 }); lit.push([m, .9]);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(hw * 1.7, hw * 1.7 * .19), m); sign.position.y = 9.4; g.add(sign); scene.add(g);
+  }
+  // Muscle Beach: fenced pen on the sand with benches and racks
+  { const x = -9012, z = -54, y = H(x, z), g = new THREE.Group(); g.position.set(x, y, z); const M = c => new THREE.MeshLambertMaterial({ color: c });
+    const P = [], U = [], I = [], w = 30, d = 18, corners = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2], [-w / 2, -d / 2]];
+    for (let i = 0; i < 4; i++) { const [ax0, az0] = corners[i], [bx0, bz0] = corners[i + 1], l = Math.hypot(bx0 - ax0, bz0 - az0) / 3, o = P.length / 3; P.push(ax0, 0, az0, bx0, 0, bz0, bx0, 2.4, bz0, ax0, 2.4, az0); U.push(0, .01, l, .01, l, 1 / 3 - .01, 0, 1 / 3 - .01); I.push(o, o + 1, o + 2, o, o + 2, o + 3); }
+    const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); fg.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); fg.setIndex(I); fg.computeVertexNormals(); g.add(new THREE.Mesh(fg, fenceTex()));
+    for (let k = 0; k < 8; k++) { const bx0 = -12 + (k % 4) * 8, bz0 = k < 4 ? -4 : 4; const bench = new THREE.Mesh(new THREE.BoxGeometry(.6, .5, 2), M(0x2b2b2b)); bench.position.set(bx0, .5, bz0); g.add(bench); const rack = new THREE.Mesh(new THREE.BoxGeometry(2.4, .08, .08), M(0xb8bcc0)); rack.position.set(bx0, 1.6, bz0 + 1.1); g.add(rack); for (const s of [-1, 1]) { const plate = new THREE.Mesh(new THREE.CylinderGeometry(.4, .4, .12, 12), M(0x111111)); plate.rotation.z = Math.PI / 2; plate.position.set(bx0 + s * 1.2, 1.6, bz0 + 1.1); g.add(plate); } }
+    const [c, q] = cnv(512, 96); q.fillStyle = '#1b1b1b'; q.fillRect(0, 0, 512, 96); q.fillStyle = '#ffd23f'; q.font = FONT(64); q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText('MUSCLE BEACH', 256, 52);
+    const sg = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.2), new THREE.MeshLambertMaterial({ map: texFromCanvas(c), side: THREE.DoubleSide })); sg.position.set(0, 3.6, -d / 2); g.add(sg);
+    scene.add(g); PLACES.lm.musclebeach = [x + 30, z]; }
+  // vendor canopies along the boardwalk
+  const BW = EXTRAS.boardwalk, rnd = mulberry32(90291), tents = [];
+  for (let i = 0; i < BW.length - 1; i++) { const [ax0, az0] = BW[i], [bx0, bz0] = BW[i + 1], L = Math.hypot(bx0 - ax0, bz0 - az0), dx = (bx0 - ax0) / L, dz = (bz0 - az0) / L; for (let s = 6; s < L; s += 9 + rnd() * 8) { const off = 6, x = ax0 + dx * s - dz * off, z = az0 + dz * s + dx * off; if (isWater(maskAt(x, z)) || inAnyBuilding(x, z, 1)) continue; tents.push([x, z, Math.atan2(dx, dz), (rnd() * 6) | 0]); } }
+  const tg = new THREE.ConeGeometry(2.2, 1.2, 4); tg.rotateY(Math.PI / 4); tg.translate(0, 2.8, 0); const leg = new THREE.CylinderGeometry(.05, .05, 2.3, 4); leg.translate(1.4, 1.15, 1.4);
+  const tm = new THREE.InstancedMesh(tg, new THREE.MeshLambertMaterial({ color: 0xffffff }), tents.length), lm = new THREE.InstancedMesh(leg, new THREE.MeshLambertMaterial({ color: 0xdddddd }), tents.length), cols = ['#e94f8a', '#2bb3a3', '#f2b134', '#3c8dde', '#e8603c', '#7b4fd1'].map(h => new THREE.Color(h));
+  const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S1 = new THREE.Vector3(1, 1, 1), YA = new THREE.Vector3(0, 1, 0);
+  tents.forEach(([x, z, a, c], i) => { Q.setFromAxisAngle(YA, a); M4.compose(V.set(x, H(x, z), z), Q, S1); tm.setMatrixAt(i, M4); lm.setMatrixAt(i, M4); tm.setColorAt(i, cols[c]); });
+  tm.frustumCulled = lm.frustumCulled = false; scene.add(tm, lm);
+}
+
+/* map civic places onto their real buildings */
+function civicSigns() {
+  const C2 = EXTRAS.civic; if (!C2) return [];
+  const out = [];
+  for (const [, x, z] of C2.fire) out.push([x, z, CIV.fire]);
+  for (const [, x, z] of C2.police) out.push([x, z, CIV.police]);
+  for (const [, x, z] of C2.cinema) out.push([x, z, CIV.cinema]);
+  for (const [n, x, z] of C2.mall) if (!/Target|Ross|Marshalls|TJ Maxx/.test(n) || true) out.push([x, z, CIV.mall]);
+  out.push([-1767, -4296, CIV.hotel]);
+  return out;
 }
 
 /* ---------------- geometry builder ---------------- */
@@ -3009,10 +3207,14 @@ function addBuilding(gb, b, rnd) {
   const brand = BRAND_BY_CELL[sign];
   const school = !brand ? schoolAt((b.bb[0] + b.bb[2]) / 2, (b.bb[1] + b.bb[3]) / 2) : null; if (school) kind = 6;
   if (sign === C.church) kind = 5;
+  const bcx = (b.bb[0] + b.bb[2]) / 2, bcz = (b.bb[1] + b.bb[3]) / 2;
+  const jungle = !brand && !school && kind <= 2 && inJungle(bcx, bcz), jh = hashf(pts[0] * 1.3, pts[1]), jcell = jh < .15 ? CIV.jungleB : jh < .58 ? CIV.jungleA : CIV.jungleC;
+  if (jungle && kind === 0) kind = 2;
+  const vshop = !brand && !school && kind !== 0 && kind !== 1 && nearBoardwalk(bcx, bcz, 45), studio = !brand && !school && kind >= 3 && inStudio(bcx, bcz);
   let minY = 1e9, maxY = -1e9; const ys = new Float32Array(n);
   for (let i = 0; i < n; i++) { ys[i] = H(pts[i * 2], pts[i * 2 + 1]); if (ys[i] < minY) minY = ys[i]; if (ys[i] > maxY) maxY = ys[i]; }
-  const base = minY - .4, top = maxY + b.h, hsh = hashf(pts[0], pts[1]);
-  const tall = b.h > 13 && kind !== 8 && kind !== 7 && !brand && !school;
+  const base = b.overRoad ? minY + 6.5 : minY - .4, top = Math.max(maxY + (jungle ? Math.max(b.h, 6.8) : b.h), base + 4), hsh = hashf(pts[0], pts[1]);
+  const tall = b.h > 13 && kind !== 8 && kind !== 7 && !brand && !school && !jungle;
   const hst = houseStyleFor(hashf(pts[0], pts[1]));
   const tint = kind === 0 ? hex3(hst.wall) : kind === 1 ? HOUSE_COLS[(hsh * HOUSE_COLS.length) | 0] : kind === 5 ? WHITE : COM_COLS[(hsh * COM_COLS.length) | 0];
   for (let i = 0; i < n; i++) {
@@ -3021,7 +3223,10 @@ function addBuilding(gb, b, rnd) {
     const nx = ez / L, nz = -ex / L, front = i === b.front;
     const eBase = Math.max(ys[i], ys[j]);
     let cell = C.stucco, col = tint, segW = 1e9, rowH = 0, band = 0, upper = C.stucco;
-    if (tall) { cell = kind === 2 ? C.aptSide : C.office; segW = 14; rowH = kind === 2 ? 9.6 : 19; col = kind === 2 ? tint : WHITE; }
+    if (jungle) { cell = kind === 1 ? CIV.garages : front || jcell !== CIV.jungleB ? jcell : CIV.jungleA; col = WHITE; segW = 12; }
+    else if (vshop) { cell = front ? CIV.boardwalk : C.stucco; col = front ? WHITE : tint; segW = 10; }
+    else if (studio) { cell = CIV.studio; col = WHITE; segW = 16; }
+    else if (tall) { cell = kind === 2 ? C.aptSide : C.office; segW = 14; rowH = kind === 2 ? 9.6 : 19; col = kind === 2 ? tint : WHITE; }
     else if (kind === 0) { if (front && L > 5) { cell = hst.cell; col = WHITE; } }
     else if (kind === 1) { if (front && L > 4) cell = C.garage; }
     else if (kind === 2) { cell = front ? C.apt + ((hsh * 2) | 0) : C.aptSide; segW = 12; rowH = 9.6; }
@@ -3071,6 +3276,7 @@ function addBuilding(gb, b, rnd) {
     let faces; try { faces = THREE.ShapeUtils.triangulateShape(contour, []); } catch (e) { faces = []; }
     const U = (x, z) => [uv[0] + (uv[2] - uv[0]) * (x - x0) / w, uv[1] + (uv[3] - uv[1]) * (z - z0) / d];
     for (const [a, bq, c] of faces) gb.tri([pts[a * 2], top, pts[a * 2 + 1]], [pts[bq * 2], top, pts[bq * 2 + 1]], [pts[c * 2], top, pts[c * 2 + 1]], U(pts[a * 2], pts[a * 2 + 1]), U(pts[bq * 2], pts[bq * 2 + 1]), U(pts[c * 2], pts[c * 2 + 1]), WHITE, [0, 1, 0]);
+    if (b.overRoad) for (const [a, bq, c] of faces) gb.tri([pts[a * 2], base, pts[a * 2 + 1]], [pts[bq * 2], base, pts[bq * 2 + 1]], [pts[c * 2], base, pts[c * 2 + 1]], U(pts[a * 2], pts[a * 2 + 1]), U(pts[bq * 2], pts[bq * 2 + 1]), U(pts[c * 2], pts[c * 2 + 1]), [.55, .55, .55], [0, -1, 0]);
   }
 }
 let BUS_BY_CHUNK = new Map();
@@ -3082,7 +3288,9 @@ function genChunk(cx, cz) {
   // collision edges in a 20 m grid
   const edges = [], egrid = new Map(), EGC = 20;
   for (const b of blds) {
+    if (b.overRoad === undefined) b.overRoad = overRoad(b);
     addBuilding(gb, b, rnd);
+    if (b.overRoad) continue;
     for (let i = 0; i < b.n; i++) {
       const j = (i + 1) % b.n, ax = b.pts[i * 2], az = b.pts[i * 2 + 1], bx = b.pts[j * 2], bz = b.pts[j * 2 + 1], e = edges.length / 4;
       edges.push(ax, az, bx, bz);
@@ -3106,7 +3314,7 @@ function genChunk(cx, cz) {
       for (let s = 6 + rnd() * 14; s < L - 4; s += 22 + rnd() * 14) { if (rnd() < .5) continue; const side = rnd() < .5 ? 1 : -1, px = ax + dx * s + nx * side * (hw + 2.3), pz = az + dz * s + nz * side * (hw + 2.3); if (clearSpot(px, pz, 1)) palms.push([px, pz, 13 + rnd() * 10, rnd() * 6]); }
       if (WNAME[w] === CRENSHAW_NAME && WONE[w]) for (let s = 8; s < L - 4; s += 26) { const px = ax + dx * s - nx * (hw + 1.6), pz = az + dz * s - nz * (hw + 1.6); if (clearSpot(px, pz, 1.2)) palms.push([px, pz, 15 + rnd() * 8, rnd() * 6]); }
     } else if (cls === 5 && rnd() < .5) {
-      for (let s = 8 + rnd() * 10; s < L - 4; s += 18 + rnd() * 16) { const side = rnd() < .5 ? 1 : -1, px = ax + dx * s + nx * side * (hw + 2.6), pz = az + dz * s + nz * side * (hw + 2.6); if (!clearSpot(px, pz, 1)) continue; if (rnd() < .3) palms.push([px, pz, 12 + rnd() * 9, rnd() * 6]); else trees.push([px, pz, .7 + rnd() * .6, rnd() * 6]); }
+      for (let s = 8 + rnd() * 10; s < L - 4; s += 18 + rnd() * 16) { const side = rnd() < .5 ? 1 : -1, px = ax + dx * s + nx * side * (hw + 2.6), pz = az + dz * s + nz * side * (hw + 2.6); if (!clearSpot(px, pz, 1)) continue; const jg = inJungle(px, pz); if (rnd() < (jg ? .85 : .3)) palms.push([px, pz, jg ? 19 + rnd() * 8 : 12 + rnd() * 9, rnd() * 6]); else trees.push([px, pz, .7 + rnd() * .6, rnd() * 6]); }
     }
   });
   for (const [x, z, , shelter] of (BUS_BY_CHUNK.get(cx + ',' + cz) || [])) {
@@ -3232,8 +3440,6 @@ function buildLandmarks() {
     const [bx, bz] = at('stairs_base'), [tx, tz] = at('overlook');
     const n = 160, sg = new THREE.BoxGeometry(3.2, .5, 1.6), inst = new THREE.InstancedMesh(sg, mat(0xd8cdb4), n), M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), ang = Math.atan2(tx - bx, tz - bz);
     Q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), ang);
-    for (let k = 0; k < n; k++) { const t = k / (n - 1) * .92, x = lerp(bx, tx, t), z = lerp(bz, tz, t); M4.compose(new THREE.Vector3(x, H(x, z) + .1, z), Q, new THREE.Vector3(1, 1, 1)); inst.setMatrixAt(k, M4); }
-    inst.receiveShadow = true; scene.add(inst);
     const vc = addMesh(new THREE.BoxGeometry(18, 5, 10), new THREE.MeshLambertMaterial({ color: 0x9fc1d6, transparent: true, opacity: .85, emissive: 0xffd58a, emissiveIntensity: 0 }), tx, H(tx, tz) + 2.5, tz, ang); lit.push([vc.material, .5]);
     EXCL.push([tx, tz, 50, 'park'], [lerp(bx, tx, .5), lerp(bz, tz, .5), 40, 'park']);
   }
@@ -3742,7 +3948,7 @@ const WORD_LINES = {
   'CLINIC': ['Doctor\'s appointment.', 'Clinic, please.'], 'BANK': ['Gotta hit the bank.', 'Bank before it closes.'], 'CAFE': ['Coffee. Please.', 'Meeting someone at the cafe.']
 };
 function buildDests() {
-  const L = PLACES.lm; L.wahgwaan = [3929, -2071]; L.evpark = [2849, 1306];
+  const L = PLACES.lm; L.wahgwaan = [3929, -2071]; L.evpark = [2849, 1306]; L.culverdt = [-1797, -4297]; L.jungle = [2300, -3050];
   const lm = [
     ['Leimert Park', 'leimert', ['Drop me at the Village. Drum circle already going.', 'Leimert. I got a show at the park.']],
     ['KBLA Talk 1580', 'kbla', ['KBLA. I\'m on the air in fifteen.', 'Take me to the station on Crenshaw.']],
@@ -3773,6 +3979,9 @@ function buildDests() {
     ['Dockweiler Beach', 'dockweiler', ['Dockweiler. Bonfire tonight.', 'The beach by the planes.']],
     ['Marina del Rey', 'marina', ['The Marina. Boat party.', 'Dinner on the water.']],
     ['Wah Gwaan, Crenshaw & Vernon', 'wahgwaan', ['Wah Gwaan. Oxtail and rice and peas, let\'s go.', 'The Jamaican spot on Crenshaw and Vernon.']],
+    ['Venice Boardwalk & Muscle Beach', 'musclebeach', ['Muscle Beach. Leg day by the ocean.', 'The boardwalk in Venice, please.']],
+    ['Downtown Culver City', 'culverdt', ['Downtown Culver. Meeting people for dinner.', 'Culver City, by the hotel.']],
+    ['The Jungle, Baldwin Village', 'jungle', ['Take me home, I stay in the Jungle.', 'Santo Tomas and Stevely, please.']],
     ['Intuit Dome', 'intuit', ['Intuit Dome. Clippers tonight.', 'The Dome on Century, please.']],
     ['Edward Vincent Jr. Park', 'evpark', ['Edward Vincent Park. Family picnic.', 'The park on Florence.']],
     ['LA Memorial Coliseum', 'coliseum', ['The Coliseum, Exposition Park.', 'USC game. Fight on!']]
@@ -3795,6 +4004,7 @@ function buildDests() {
   LM_SIGNS = [['albertsons', 'MARKET'], ['sprouts', 'MARKET'], ['bhc_plaza', 'PLAZA'], ['fox_hills', 'MALL']].filter(([k]) => L[k]).map(([k, w]) => [L[k][0], L[k][1], SIGN_WORDS.indexOf(w)])
     .concat(Object.keys(BRAND_AT).filter(k => L[k]).map(k => [L[k][0], L[k][1], BRANDS[BRAND_AT[k]].front]))
     .concat([[3994.4, -2145.4, BC.artprac], [4022, -2165, BC.vision], [3929, -2071, BC.wahgwaan], [3960, -2032, BC.bank]]);
+  LM_SIGNS = LM_SIGNS.concat(civicSigns());
   mapBrandBuildings();
 }
 
@@ -4435,9 +4645,9 @@ async function boot() {
   await loadStep(62, 'Shaping the real hills');
   buildTerrain(); buildLandmarkTrees(); buildBrandProps(); initGas(); initCopBeams(); initSkids(); initHelis(); initBlimp(); initPumps(); initEventBeams();
   await loadStep(72, 'Mapping routes and traffic lights');
-  buildGraph(); buildNodeWays(); buildMiniBase(MAP); buildLAX(); buildColiseum(); buildIntuitDome(); buildFlorence(); buildForumPylon(); buildDests(); buildSignals(); buildIntersections();
+  buildGraph(); buildNodeWays(); buildMiniBase(MAP); buildLAX(); buildColiseum(); buildIntuitDome(); buildFlorence(); buildForumPylon(); buildCulverStairs(); buildVenice(); buildDests(); buildSignals(); buildIntersections();
   await loadStep(86, 'Calling riders');
-  scene.traverse(o => { if (o.isInstancedMesh) o.frustumCulled = false; });
+  scene.traverse(o => { if (o.isInstancedMesh && !o.userData.cull) o.frustumCulled = false; });
   initTraffic(); initPeds(); initRideVisuals(); setupHUD();
   bindOpts('o-driver', 'driver'); bindOpts('o-car', 'car'); bindOpts('o-time', 'time');
   $('start').addEventListener('click', startGame);
