@@ -690,7 +690,8 @@ function buildAtlas(words) {
   for (let i = 0; i < 48; i++) {
     if (i === C.church) { drawChurch(i, rnd); continue; }
     const w = i === 0 ? 'OPEN' : SIGN_WORDS[i] || 'OPEN';
-    if (i > 0 && !SIGN_STYLE[w] && rnd() < .7) { drawStyled(i, w, rnd); STYLED.add(i); }
+    if (i > 0 && FOOD_WORDS.has(w)) { drawFoodSpot(i, w, rnd); STYLED.add(i); }
+    else if (i > 0 && !SIGN_STYLE[w] && rnd() < .7) { drawStyled(i, w, rnd); STYLED.add(i); }
     else drawStore(i, w, rnd, { sign: SIGN_STYLE[w], small: w === 'DISPENSARY' ? '21+' : undefined });
   }
   GENERIC_CELLS = GENERIC_STORES.map(w => SIGN_WORDS.indexOf(w)).filter(i => i > 0);
@@ -705,7 +706,7 @@ function buildAtlas(words) {
   drawMarket(C.market, rnd, 'MARKET ST'); drawMarket(C.market + 1, rnd, 'BOUTIQUE');
   drawApts(C.aptSide, rnd, false);
   { const [x, y] = cellXY(C.upper); ax.fillStyle = '#f2efe8'; ax.fillRect(x, y, CELL, CELL); noise(ax, x, y, CELL, CELL, 1400, .1, rnd); for (let c = 0; c < 3; c++) { ax.fillStyle = '#34495e'; ax.fillRect(x + 22 + c * 80, y + 80, 52, 90); ex.fillStyle = rnd() < .5 ? '#ffcf7a' : '#000'; ex.fillRect(x + 22 + c * 80, y + 80, 52, 90); } }
-  skinAtlas(); drawBrands(); drawMurals();
+  skinAtlas(); drawBrands(); drawMurals(); drawHomes(); drawVernonCorner();
 }
 function texFromCanvas(c, rep) { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
 function roadTex(kind) {
@@ -1075,7 +1076,7 @@ function detailRoof(i, rnd) {
 function skinAtlas() {
   const rnd = mulberry32(99);
   for (let i = 0; i < 48; i++) { if (i === C.church || STYLED.has(i)) { weatherCell(i, rnd); continue; } detailStore(i, rnd); weatherCell(i, rnd); }
-  for (let i = 0; i < 6; i++) { detailHouse(C.house + i, rnd); weatherCell(C.house + i, rnd, { noCap: true, streaks: 2 }); }
+
   detailApts(C.apt, rnd, false); detailApts(C.apt + 1, rnd, false); detailApts(C.aptSide, rnd, false); detailApts(C.office, rnd, true);
   for (const k of [C.apt, C.apt + 1, C.aptSide, C.office, C.stucco, C.brick, C.block, C.concrete, C.warehouse, C.school, C.garage, C.rollup, C.market, C.market + 1, C.upper]) weatherCell(k, rnd);
   for (let k = 0; k < 8; k++) weatherCell(C.graffiti + k, rnd, { streaks: 6 });
@@ -1092,11 +1093,13 @@ function driverFaceMat(def) {
 }
 
 /* ---------------- branded storefronts (owner-approved, drawn from Miles's reference shots) ---------------- */
-const BC = { tacomell: 83, gorilla: 84, dulans: 85, marathon: 86, plazaA: 87, plazaB: 88, smMall: 89, smTile: 90, kbla: 91, vision: 92, artprac: 93,
+const BC = { wahgwaan: 106, bank: 107, tacomell: 83, gorilla: 84, dulans: 85, marathon: 86, plazaA: 87, plazaB: 88, smMall: 89, smTile: 90, kbla: 91, vision: 92, artprac: 93,
   tacoSide: 94, gorillaSide: 95, dulansSide: 96, marathonSide: 97, kblaSide: 98, visionSide: 99,
   pet: 100, earles: 101, fatburger: 102, louisiana: 103, roscoes: 104, pollo: 105 };
 // how each brand dresses its building: front cell, side cell, optional tiles for wide fronts, full-height facade
 const BRANDS = {
+  wahgwaan: { front: 106, side: C.stucco, full: true },
+  bank: { front: 107, side: C.concrete, full: true },
   tacomell: { front: BC.tacomell, side: BC.tacoSide, full: true },
   gorilla: { front: BC.gorilla, side: BC.gorillaSide, full: true },
   dulans: { front: BC.dulans, side: BC.dulansSide, full: true, tiles: [BC.dulansSide] },
@@ -2159,6 +2162,217 @@ function eventDest() {
 }
 let LAX_DESTS = [];
 
+/* ---------------- South LA homes: Spanish stucco, craftsman bungalows, two-story stucco (from Miles's street shots) ---------------- */
+// each style: atlas cell, wall colour (side walls match it), roof (tile or shingle)
+const HOUSE_STYLES = [
+  { cell: 48, wall: '#f4f2ec', roof: 'tile', kind: 'spanishArch' },     // white Spanish, big arched window
+  { cell: 49, wall: '#ead7a8', roof: 'tile', kind: 'spanishTriple' },   // cream, three arched windows
+  { cell: 50, wall: '#e0a58a', roof: 'tile', kind: 'spanishBars' },     // salmon, bars + striped awning
+  { cell: 51, wall: '#f1efea', roof: 'shingle', kind: 'craftsman', trim: '#8a3a52' },
+  { cell: 52, wall: '#c9b08a', roof: 'shingle', kind: 'twoStory' },     // tan, white shutters
+  { cell: 53, wall: '#f6f6f2', roof: 'shingle', kind: 'ranch' },        // white ranch, bay windows
+  { cell: 116, wall: '#7cc4c0', roof: 'tile', kind: 'spanishArch' },
+  { cell: 117, wall: '#e8c25a', roof: 'shingle', kind: 'garage' },
+  { cell: 118, wall: '#bcd3e6', roof: 'shingle', kind: 'craftsman', trim: '#2f4a6a' },
+  { cell: 119, wall: '#efc7a0', roof: 'tile', kind: 'spanishGate' },
+  { cell: 120, wall: '#b9b6ae', roof: 'shingle', kind: 'craftsman', trim: '#f4f4f0' },
+  { cell: 121, wall: '#cfe6c8', roof: 'tile', kind: 'spanishBars' }
+];
+function houseStyleFor(h) { return HOUSE_STYLES[(h * HOUSE_STYLES.length) | 0]; }
+function drawHomes() {
+  const rnd = mulberry32(4500), g = ax, W = CELL;
+  const win = (x, y, w, h, opts = {}) => {
+    g.fillStyle = opts.frame || '#f4f4f0'; g.fillRect(x - 4, y - 4, w + 8, h + 8);
+    g.fillStyle = '#2b3846'; g.fillRect(x, y, w, h); g.fillStyle = 'rgba(255,255,255,.22)'; g.fillRect(x, y, w * .4, h);
+    if (opts.curtain) { g.fillStyle = opts.curtain; g.fillRect(x + 2, y + 2, w - 4, h * .35); }
+    ex.fillStyle = rnd() < .7 ? '#ffcf7a' : '#000'; ex.fillRect(x, y, w, h);
+    if (opts.mullion) { g.fillStyle = opts.frame || '#f4f4f0'; g.fillRect(x + w / 2 - 1.5, y, 3, h); g.fillRect(x, y + h / 2 - 1.5, w, 3); }
+    if (opts.bars) { g.fillStyle = '#1b1b1b'; for (let k = 0; k <= 6; k++) g.fillRect(x + k * w / 6 - 1, y - 2, 2.5, h + 4); g.fillRect(x - 2, y + h * .33, w + 4, 2); g.fillRect(x - 2, y + h * .66, w + 4, 2); }
+    if (opts.shutters) { g.fillStyle = opts.shutters; g.fillRect(x - 16, y - 4, 12, h + 8); g.fillRect(x + w + 4, y - 4, 12, h + 8); }
+  };
+  const arch = (x, y, w, h, fill, frame) => { g.fillStyle = frame; g.beginPath(); g.moveTo(x - 4, y + h + 4); g.lineTo(x - 4, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2 + 4, Math.PI, 0); g.lineTo(x + w + 4, y + h + 4); g.fill(); g.fillStyle = fill; g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.fill(); };
+  const tileBand = (x, y, w, h) => { g.fillStyle = '#9a3b22'; g.fillRect(x, y, w, h); for (let k = 0; k < w; k += 8) { g.fillStyle = k % 16 ? '#b24a2c' : '#c45a36'; g.beginPath(); g.ellipse(x + k + 4, y + h * .5, 4, h * .55, 0, 0, 7); g.fill(); } g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, y + h, w, 4); };
+  const shrubs = (x, y, n) => { for (let k = 0; k < n; k++) { const bx = x + rnd() * W, r = 9 + rnd() * 12; g.fillStyle = ['#3d6b2e', '#4f7f34', '#2f5e2a', '#6b8f3c'][k % 4]; g.beginPath(); g.arc(bx, y, r, Math.PI, 0); g.fill(); if (rnd() < .35) { g.fillStyle = ['#e94f8a', '#f2f2f2', '#e8603c'][k % 3]; for (let f = 0; f < 5; f++) g.fillRect(bx - r + rnd() * r * 2, y - rnd() * r, 3, 3); } } };
+  const door = (x, y, w, h, col, archTop) => { g.fillStyle = col; if (archTop) { g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + w / 2); g.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.fill(); } else g.fillRect(x, y, w, h); g.fillStyle = '#c9a24a'; g.fillRect(x + w - 8, y + h * .55, 3, 6); };
+  for (const st of HOUSE_STYLES) {
+    const [x, y] = cellXY(st.cell); stucco(x, y, st.wall, rnd);
+    g.fillStyle = 'rgba(0,0,0,.14)'; g.fillRect(x, y + 236, W, 20); // foundation
+    if (st.kind === 'spanishArch') {
+      tileBand(x, y, W, 14);
+      arch(x + 22, y + 90, 92, 110, '#2b3846', '#ffffff'); ex.fillStyle = '#ffcf7a'; ex.fillRect(x + 22, y + 120, 92, 80);
+      g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(x + 26, y + 120, 30, 80); g.fillStyle = '#f4f4f0'; for (let k = 1; k < 4; k++) g.fillRect(x + 22 + k * 23, y + 110, 2, 90);
+      arch(x + 146, y + 116, 46, 120, '#1b1b1b', '#e9e2d0'); door(x + 150, y + 124, 38, 112, '#1b1b1b', true);
+      g.fillStyle = '#5a3a22'; g.fillRect(x + 214, y + 60, 22, 30); g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x + 217, y + 64, 16, 22); // vent
+      shrubs(x, y + 240, 7);
+    } else if (st.kind === 'spanishTriple') {
+      tileBand(x, y + 60, W * .62, 12); g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(x, y, W, 8);
+      g.fillStyle = '#7a5a3a'; g.fillRect(x + 118, y + 30, 14, 24); // ornamental vent
+      for (let k = 0; k < 3; k++) arch(x + 148 + k * 34, y + 128, 26, 82, '#1e2a36', st.wall);
+      arch(x + 40, y + 100, 66, 120, '#3a2a1e', '#d9c48f'); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x + 46, y + 130, 20, 80);
+      door(x + 118, y + 140, 24, 96, '#2b1d14', true); g.fillStyle = '#1b1b1b'; g.fillRect(x + 112, y + 236, 36, 4); for (let k = 0; k < 4; k++) g.fillRect(x + 108, y + 200 + k * 10, 2, 36 - k * 10);
+      shrubs(x, y + 240, 9);
+    } else if (st.kind === 'spanishBars') {
+      tileBand(x, y, W, 12);
+      win(x + 26, y + 90, 64, 80, { bars: true, frame: st.wall });
+      g.fillStyle = '#b8322a'; g.fillRect(x + 20, y + 74, 76, 16); for (let k = 0; k < 8; k++) { g.fillStyle = k % 2 ? '#b8322a' : '#f4f4f0'; g.fillRect(x + 20 + k * 9.5, y + 74, 9.5, 16); }
+      tileBand(x + 112, y + 96, 70, 10); door(x + 124, y + 116, 46, 120, '#3a2a1e'); g.fillStyle = '#1b1b1b'; for (let k = 0; k < 8; k++) g.fillRect(x + 126 + k * 6, y + 116, 1.5, 120);
+      win(x + 196, y + 104, 44, 70, { bars: true, frame: st.wall });
+      g.fillStyle = '#cfcfcf'; for (let k = 0; k < 14; k++) g.fillRect(x + k * 18, y + 214, 2, 42); g.fillRect(x, y + 214, W, 2); // chain link
+      shrubs(x, y + 244, 4);
+    } else if (st.kind === 'craftsman') {
+      const tr = st.trim; g.fillStyle = tr; g.beginPath(); g.moveTo(x + 40, y + 70); g.lineTo(x + 128, y + 14); g.lineTo(x + 216, y + 70); g.lineTo(x + 206, y + 74); g.lineTo(x + 128, y + 26); g.lineTo(x + 50, y + 74); g.fill();
+      g.fillStyle = 'rgba(0,0,0,.25)'; for (let k = 0; k < 6; k++) g.fillRect(x + 104 + k * 8, y + 40, 3, 22); // gable vent
+      g.fillStyle = 'rgba(0,0,0,.06)'; for (let r = 0; r < 18; r++) g.fillRect(x, y + 80 + r * 9, W, 1.5); // lap siding
+      win(x + 30, y + 110, 70, 70, { bars: true, frame: tr }); win(x + 168, y + 110, 52, 70, { bars: true, frame: tr });
+      g.fillStyle = tr; g.fillRect(x + 108, y + 92, 52, 8); g.fillStyle = '#1e5a6a'; g.fillRect(x + 104, y + 82, 60, 12); // little awning
+      door(x + 116, y + 130, 36, 106, '#e9e9e4'); g.fillStyle = '#1b1b1b'; for (let k = 0; k < 7; k++) g.fillRect(x + 118 + k * 5.5, y + 130, 1.5, 106);
+      g.fillStyle = '#f4f4f4'; for (let k = 0; k < 26; k++) g.fillRect(x + k * 10, y + 206, 3, 50); g.fillRect(x, y + 214, W, 4); g.fillRect(x, y + 238, W, 4); // white picket
+      shrubs(x, y + 250, 3);
+    } else if (st.kind === 'twoStory') {
+      win(x + 40, y + 30, 66, 54, { shutters: '#f4f4f0', mullion: true }); win(x + 152, y + 30, 66, 54, { shutters: '#f4f4f0', mullion: true });
+      g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x, y + 104, W, 6);
+      g.fillStyle = '#efe9dc'; g.fillRect(x + 22, y + 140, 90, 70); win(x + 30, y + 148, 74, 56, { mullion: true });
+      win(x + 196, y + 150, 34, 56, { bars: true, frame: st.wall });
+      g.fillStyle = '#e9e9e4'; g.beginPath(); g.moveTo(x + 128, y + 118); g.lineTo(x + 172, y + 118); g.lineTo(x + 164, y + 132); g.lineTo(x + 136, y + 132); g.fill(); // scalloped metal awning
+      door(x + 136, y + 136, 30, 100, '#5a2e1e'); g.fillStyle = '#ffe9a8'; g.fillRect(x + 172, y + 150, 6, 10); ex.fillStyle = '#ffd88a'; ex.fillRect(x + 170, y + 148, 10, 14);
+      g.fillStyle = '#1b1b1b'; for (let k = 0; k < 26; k++) g.fillRect(x + k * 10, y + 214, 2, 42); g.fillRect(x, y + 214, W, 3); for (let k = 0; k < 26; k++) { g.beginPath(); g.arc(x + k * 10 + 5, y + 220, 3.5, 0, 7); g.strokeStyle = '#1b1b1b'; g.lineWidth = 1.2; g.stroke(); } // wrought iron
+      shrubs(x, y + 212, 5);
+    } else if (st.kind === 'ranch') {
+      g.fillStyle = '#e8e8e4'; g.fillRect(x + 150, y + 10, 30, 70); // chimney
+      for (const wx of [12, 70]) { g.fillStyle = '#e9e9e4'; g.fillRect(x + wx - 4, y + 90, 56, 96); win(x + wx, y + 98, 48, 80, { mullion: true, frame: '#e9e9e4' }); }
+      door(x + 140, y + 120, 34, 116, '#3a3a3a'); win(x + 192, y + 108, 46, 64, { frame: '#e9e9e4' });
+      g.fillStyle = '#9a6a3a'; for (let k = 0; k < 10; k++) g.fillRect(x + 180 + k * 8, y + 186, 6, 70); // wood fence
+      shrubs(x, y + 246, 8);
+    } else if (st.kind === 'garage') {
+      g.fillStyle = '#f4f4f0'; g.fillRect(x + 132, y + 90, 116, 166); g.fillStyle = '#dcdcd6'; for (let k = 0; k < 6; k++) g.fillRect(x + 132, y + 100 + k * 26, 116, 3);
+      g.fillStyle = '#5a1a2a'; g.fillRect(x + 124, y + 80, 132, 10);
+      win(x + 22, y + 100, 46, 60, { bars: true, frame: st.wall }); door(x + 80, y + 130, 34, 106, '#5a3a22');
+      g.fillStyle = '#c9c9c9'; for (let k = 0; k < 12; k++) g.fillRect(x + k * 10, y + 208, 1.5, 48); g.fillRect(x, y + 208, 120, 2); // chain-link gate
+      shrubs(x, y + 250, 2);
+    } else if (st.kind === 'spanishGate') {
+      tileBand(x, y, W, 12); tileBand(x + 92, y + 70, 76, 14);
+      arch(x + 110, y + 96, 40, 140, '#5a3a22', '#d48a5a'); g.fillStyle = 'rgba(255,255,255,.15)'; g.beginPath(); g.arc(x + 130, y + 120, 10, 0, 7); g.fill();
+      win(x + 22, y + 104, 60, 66, { mullion: true, frame: '#f4efe6' }); win(x + 186, y + 104, 50, 66, { mullion: true, frame: '#f4efe6' });
+      g.fillStyle = '#7a4a2a'; g.fillRect(x, y + 176, 96, 80); g.fillStyle = '#5a3418'; for (let k = 0; k < 12; k++) g.fillRect(x + k * 8, y + 176, 2, 80); // wood gate
+      g.fillStyle = '#e94f8a'; for (let k = 0; k < 30; k++) g.fillRect(x + 100 + rnd() * 60, y + 60 + rnd() * 40, 4, 4); // bougainvillea
+      shrubs(x + 100, y + 248, 4);
+    }
+    weatherCell(st.cell, rnd, { noCap: true, streaks: 2 });
+    // house number painted by the door
+    g.fillStyle = 'rgba(30,30,30,.85)'; g.font = FONT2(12, 700); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(3800 + Math.floor(rnd() * 900)), x + 128, y + 82);
+  }
+}
+
+/* ---------------- food spots: vinyl food banners, menu board, catering line ---------------- */
+const FOOD_WORDS = new Set(['RESTAURANT', 'CHICKEN', 'BURGERS', 'TACOS', 'PIZZA', 'CAFE', 'SEAFOOD', 'BBQ', 'ICE CREAM', 'BAKERY', 'DONUTS', 'HOT DOGS', 'SOUL FOOD', 'CHICKEN & WAFFLES']);
+function foodIcon(g, kind, x, y, s) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  if (kind === 'CHICKEN' || kind === 'CHICKEN & WAFFLES' || kind === 'SOUL FOOD') { g.fillStyle = '#c9832e'; g.beginPath(); g.ellipse(0, -4, 14, 11, -.5, 0, 7); g.fill(); g.fillStyle = '#f4e9d2'; g.fillRect(8, 2, 10, 4); g.beginPath(); g.arc(19, 2, 3, 0, 7); g.arc(19, 7, 3, 0, 7); g.fill(); }
+  else if (kind === 'BURGERS') { g.fillStyle = '#d9963a'; g.beginPath(); g.ellipse(0, -6, 16, 9, 0, Math.PI, 0); g.fill(); g.fillStyle = '#4fa83a'; g.fillRect(-16, -6, 32, 3); g.fillStyle = '#6b3a1e'; g.fillRect(-15, -3, 30, 6); g.fillStyle = '#f2c14e'; g.fillRect(-16, 2, 32, 2); g.fillStyle = '#d9963a'; g.fillRect(-15, 4, 30, 5); }
+  else if (kind === 'TACOS') { g.fillStyle = '#e8b84a'; g.beginPath(); g.arc(0, 6, 16, Math.PI, 0); g.fill(); g.fillStyle = '#4fa83a'; g.fillRect(-12, -6, 24, 4); g.fillStyle = '#c0392b'; for (let k = 0; k < 4; k++) g.fillRect(-10 + k * 6, -9, 3, 3); }
+  else if (kind === 'PIZZA') { g.fillStyle = '#e8b84a'; g.beginPath(); g.moveTo(-14, -10); g.lineTo(14, -10); g.lineTo(0, 14); g.fill(); g.fillStyle = '#c0392b'; for (const [a, b] of [[-5, -5], [5, -4], [0, 3]]) { g.beginPath(); g.arc(a, b, 3, 0, 7); g.fill(); } }
+  else if (kind === 'SEAFOOD') { g.fillStyle = '#e8603c'; g.beginPath(); g.ellipse(-2, 0, 14, 8, 0, 0, 7); g.fill(); g.beginPath(); g.moveTo(10, 0); g.lineTo(18, -7); g.lineTo(18, 7); g.fill(); g.fillStyle = '#111'; g.fillRect(-10, -2, 3, 3); }
+  else if (kind === 'ICE CREAM') { g.fillStyle = '#d9963a'; g.beginPath(); g.moveTo(-8, 0); g.lineTo(8, 0); g.lineTo(0, 18); g.fill(); g.fillStyle = '#f07ab0'; g.beginPath(); g.arc(0, -4, 10, 0, 7); g.fill(); }
+  else if (kind === 'DONUTS' || kind === 'BAKERY') { g.fillStyle = '#d9963a'; g.beginPath(); g.arc(0, 0, 14, 0, 7); g.fill(); g.fillStyle = '#f07ab0'; g.beginPath(); g.arc(0, -1, 12, 0, 7); g.fill(); g.fillStyle = '#2b2b2b'; g.beginPath(); g.arc(0, 0, 5, 0, 7); g.fill(); }
+  else { g.fillStyle = '#f4f4f0'; g.beginPath(); g.ellipse(0, 4, 18, 8, 0, 0, 7); g.fill(); g.fillStyle = '#7a3e12'; g.beginPath(); g.arc(-6, 0, 6, 0, 7); g.fill(); g.fillStyle = '#4fa83a'; g.fillRect(2, -2, 10, 5); g.fillStyle = '#f2f2e0'; g.beginPath(); g.arc(4, 6, 5, 0, 7); g.fill(); }
+  g.restore();
+}
+function drawFoodSpot(i, word, rnd) {
+  const [x, y] = cellXY(i), g = ax, W = CELL, wall = ['#f4e1b5', '#f2b134', '#e94f8a', '#2bb3a3', '#e8603c', '#f4f2ec', '#d93a3a', '#1e9e5a'][Math.floor(rnd() * 8)], ink = contrastOn(wall);
+  stucco(x, y, wall, rnd);
+  const [sb, sf] = SIGN_STYLE[word] || [['#c0392b', '#ffd23f'], ['#1b1b1b', '#f2c14e'], ['#0D2B4F', '#fff'], ['#1e7a46', '#ffd23f']][Math.floor(rnd() * 4)];
+  // big sign with a food icon on each end
+  g.fillStyle = sb; g.fillRect(x + 8, y + 26, W - 16, 66); g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 3; g.strokeRect(x + 8, y + 26, W - 16, 66);
+  foodIcon(g, word, x + 34, y + 59, 1.1); foodIcon(g, word, x + W - 34, y + 59, 1.1);
+  g.fillStyle = sf; g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, word, x + W / 2, y + 60, W - 120, 44);
+  ex.fillStyle = sf; ex.font = g.font; ex.textAlign = 'center'; ex.textBaseline = 'middle'; ex.fillText(word, x + W / 2, y + 60);
+  g.fillStyle = ink; g.font = FONT2(11, 700); g.fillText('DINE IN · TAKE OUT · CATERING', x + W / 2, y + 104);
+  // storefront glass with vinyl food photo banners
+  g.fillStyle = '#2b2b2b'; g.fillRect(x + 8, y + 118, W - 16, 124); glass(x + 12, y + 122, W - 24, 116, 4);
+  for (let k = 0; k < 3; k++) { const bx = x + 18 + k * 78, by = y + 180; g.fillStyle = ['#f2c14e', '#e8603c', '#1e9e5a'][k]; g.fillRect(bx, by, 66, 54); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(bx + 4, by + 4, 58, 34); foodIcon(g, word, bx + 33, by + 21, .9); g.fillStyle = '#1b1b1b'; g.font = FONT(13); g.textAlign = 'center'; g.fillText(['COMBO #1', 'FAMILY MEAL', 'SPECIAL'][k], bx + 33, by + 46); g.fillStyle = '#c0392b'; g.font = FONT(12); g.fillText('$' + (8 + Math.floor(rnd() * 14)) + '.99', bx + 33, by + 46 + 0); }
+  // menu board + open sign
+  g.fillStyle = '#1b1b1b'; g.fillRect(x + 150, y + 128, 90, 44); g.fillStyle = '#f2f2e0'; for (let r = 0; r < 4; r++) { g.fillRect(x + 156, y + 136 + r * 9, 50, 3); g.fillRect(x + 216, y + 136 + r * 9, 18, 3); }
+  g.fillStyle = '#ff3b3b'; g.font = FONT2(13, 700); g.textAlign = 'left'; g.fillText('OPEN', x + 22, y + 140); ex.fillStyle = '#ff4d4d'; ex.font = g.font; ex.textAlign = 'left'; ex.fillText('OPEN', x + 22, y + 140);
+  weatherCell(i, rnd, { noCap: true, streaks: 2 });
+}
+
+/* ---------------- the two Leimert corner buildings at Crenshaw & Vernon ---------------- */
+function drawVernonCorner() {
+  const rnd = mulberry32(4371), g = ax, W = CELL;
+  // Wah Gwaan: art-deco cream front with stepped pilasters, palms and the Jamaican flag sign
+  let [x, y] = cellXY(106); stucco(x, y, '#e9d39a', rnd);
+  g.fillStyle = '#d9c084'; for (const px of [6, 64, 180, 236]) g.fillRect(x + px, y, 14, 186);
+  g.fillStyle = '#f2e2b0'; g.fillRect(x + 96, y, 64, 40); g.fillRect(x + 108, y - 2, 40, 14);
+  g.fillStyle = '#c8746a'; g.fillRect(x, y + 186, W, 10); g.fillRect(x, y + 236, W, 20);
+  // flag saltire sign with palms
+  g.save(); g.translate(x + 128, y + 66); g.fillStyle = '#1e8a3a'; g.fillRect(-58, -18, 116, 36);
+  g.fillStyle = '#111'; g.beginPath(); g.moveTo(-58, -18); g.lineTo(0, 0); g.lineTo(-58, 18); g.fill(); g.beginPath(); g.moveTo(58, -18); g.lineTo(0, 0); g.lineTo(58, 18); g.fill();
+  g.strokeStyle = '#f2c14e'; g.lineWidth = 6; g.beginPath(); g.moveTo(-58, -18); g.lineTo(58, 18); g.moveTo(58, -18); g.lineTo(-58, 18); g.stroke(); g.restore();
+  for (const px of [52, 204]) { g.strokeStyle = '#1b1b1b'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + px, y + 66); g.quadraticCurveTo(x + px + 4, y + 50, x + px, y + 36); g.stroke(); for (let f = 0; f < 6; f++) { const a = f / 6 * Math.PI * 2; g.beginPath(); g.moveTo(x + px, y + 36); g.lineTo(x + px + Math.cos(a) * 14, y + 38 + Math.abs(Math.sin(a)) * 8); g.stroke(); } }
+  g.fillStyle = '#f2c14e'; g.fillRect(x + 112, y + 34, 32, 12);
+  neonText('JAMAICAN RESTAURANT & BAR', x + 128, y + 100, 18, '#1e7a46', '#7cff6b', FONT, 'center', 200);
+  g.fillStyle = '#2a8fa0'; g.fillRect(x + 26, y + 116, W - 52, 10); // teal band
+  glass(x + 26, y + 126, W - 52, 60, 6);
+  for (let k = 0; k < 4; k++) { g.fillStyle = ['#1e7a46', '#f2c14e', '#c0392b', '#1e7a46'][k]; g.fillRect(x + 36 + k * 48, y + 196, 40, 36); foodIcon(g, k % 2 ? 'CHICKEN' : 'RESTAURANT', x + 56 + k * 48, y + 212, .8); }
+  g.fillStyle = '#1b1b1b'; for (let k = 0; k < 22; k++) g.fillRect(x + k * 12, y + 200, 2, 36); g.fillRect(x, y + 200, W, 3); // iron rail
+  weatherCell(106, rnd, { noCap: true, streaks: 2 });
+  // bank: white vertical fins over a blue-glass V, lit blue band
+  [x, y] = cellXY(107); g.fillStyle = '#eceae4'; g.fillRect(x, y, W, W); noise(g, x, y, W, W, 800, .06, rnd);
+  for (let k = 0; k < 16; k++) { g.fillStyle = '#d6d3cb'; g.fillRect(x + 6 + k * 15.5, y + 14, 6, 120); g.fillStyle = '#9fb8c8'; g.fillRect(x + 12 + k * 15.5, y + 22, 8, 104); ex.fillStyle = rnd() < .5 ? '#cfe6ff' : '#000'; ex.fillRect(x + 12 + k * 15.5, y + 22, 8, 104); }
+  g.fillStyle = '#1f4fa8'; g.beginPath(); g.moveTo(x, y + 150); g.lineTo(x + 128, y + 236); g.lineTo(x + W, y + 150); g.lineTo(x + W, y + 236); g.lineTo(x, y + 236); g.fill();
+  g.fillStyle = 'rgba(160,200,255,.4)'; for (let k = 0; k < 8; k++) g.fillRect(x + k * 32 + 4, y + 190, 24, 44); ex.fillStyle = '#9fd0ff'; ex.fillRect(x, y + 200, W, 36);
+  g.fillStyle = '#eceae4'; g.beginPath(); g.moveTo(x, y + 140); g.lineTo(x + 128, y + 226); g.lineTo(x + W, y + 140); g.lineTo(x + W, y + 152); g.lineTo(x + 128, y + 238); g.lineTo(x, y + 152); g.fill();
+  g.fillStyle = '#1f4fa8'; g.fillRect(x + 150, y + 140, 92, 26); neonText('BANK · ATM', x + 196, y + 153, 18, '#fff', '#cfe6ff', FONT, 'center', 84);
+  g.fillStyle = '#b8a07a'; g.fillRect(x, y + 238, W, 18);
+  weatherCell(107, rnd, { noCap: true, streaks: 2 });
+}
+
+/* ---------------- yards: fences, trash bins, cars in the driveway ---------------- */
+let FENCE_TEX = null, binGeo = null, binMat = null;
+function fenceTex() {
+  if (FENCE_TEX) return FENCE_TEX;
+  const [c, g] = cnv(128, 192); g.clearRect(0, 0, 128, 192);
+  // row 0: black wrought iron, row 1: white picket, row 2: chain link
+  g.fillStyle = '#1b1b1b'; for (let k = 0; k < 128; k += 10) g.fillRect(k, 4, 3, 60); g.fillRect(0, 8, 128, 4); g.fillRect(0, 54, 128, 4); g.strokeStyle = '#1b1b1b'; g.lineWidth = 2; for (let k = 5; k < 128; k += 10) { g.beginPath(); g.arc(k, 16, 4, 0, 7); g.stroke(); }
+  g.fillStyle = '#f4f4f0'; for (let k = 0; k < 128; k += 12) { g.fillRect(k + 2, 72, 7, 54); g.beginPath(); g.moveTo(k + 2, 72); g.lineTo(k + 5.5, 67); g.lineTo(k + 9, 72); g.fill(); } g.fillRect(0, 82, 128, 4); g.fillRect(0, 112, 128, 4);
+  g.strokeStyle = 'rgba(200,205,210,.95)'; g.lineWidth = 1.5; for (let k = -64; k < 192; k += 8) { g.beginPath(); g.moveTo(k, 132); g.lineTo(k + 60, 192); g.stroke(); g.beginPath(); g.moveTo(k + 60, 132); g.lineTo(k, 192); g.stroke(); } g.fillStyle = '#9aa0a6'; g.fillRect(0, 130, 128, 4);
+  FENCE_TEX = new THREE.MeshLambertMaterial({ map: texFromCanvas(c, true), transparent: true, alphaTest: .4, side: THREE.DoubleSide });
+  binGeo = new THREE.BoxGeometry(.6, 1.05, .7); binGeo.translate(0, .52, 0);
+  binMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  return FENCE_TEX;
+}
+const BIN_COLS = ['#1b1b1b', '#2e7a3a', '#2c5fb0'].map(h => new THREE.Color(h));
+const PARKED_COLS = ['#c0392b', '#f4f4f4', '#1b1b1b', '#7f8c8d', '#2c5f8a', '#e8e0cc', '#9a1f2a', '#bdc3c7', '#2b2b2b', '#c9b08a'].map(h => new THREE.Color(h));
+function houseYards(blds, clearSpot, group, rnd, inB) {
+  const P = [], U = [], I = [], bins = [], cars = [[], []];
+  const fence = (x1, z1, x2, z2, row) => { const y1 = H(x1, z1), y2 = H(x2, z2), L = Math.hypot(x2 - x1, z2 - z1) / 3, o = P.length / 3, v0 = 1 - (row + 1) / 3 + .01, v1 = 1 - row / 3 - .01; P.push(x1, y1, z1, x2, y2, z2, x2, y2 + 1.25, z2, x1, y1 + 1.25, z1); U.push(0, v0, L, v0, L, v1, 0, v1); I.push(o, o + 1, o + 2, o, o + 2, o + 3); };
+  for (const b of blds) {
+    if (b.kind !== 0 || b.front >= b.n || b.h > 9) continue;
+    const i = b.front, j = (i + 1) % b.n, x1 = b.pts[i * 2], z1 = b.pts[i * 2 + 1], x2 = b.pts[j * 2], z2 = b.pts[j * 2 + 1], L = Math.hypot(x2 - x1, z2 - z1); if (L < 6) continue;
+    const ux = (x2 - x1) / L, uz = (z2 - z1) / L; let nx = uz, nz = -ux;
+    const mx = (x1 + x2) / 2, mz = (z1 + z2) / 2, ns = nearestSeg(mx, mz, 60); if (!ns || ns.d > 40) continue;
+    const ns2 = nearestSeg(mx + nx * 3, mz + nz * 3, 60); if (ns2 && ns2.d > ns.d) { nx = -nx; nz = -nz; }
+    const yard = ns.d - WHW[segW[ns.id]] - 3.4; if (yard < 3) continue;   // distance from wall to the sidewalk
+    const h = hashf(x1 * 1.7, z1 * 1.3), style = houseStyleFor(hashf(b.pts[0], b.pts[1]));
+    const fo = Math.min(yard - .3, 5 + h * 3);
+    // fence along the front, gap for the walkway in the middle
+    if (h < .62) {
+      const row = style.roof === 'tile' ? (h < .3 ? 0 : 2) : (h < .35 ? 1 : 0), ext = .5;
+      const ax0 = x1 - ux * ext + nx * fo, az0 = z1 - uz * ext + nz * fo, bx0 = x2 + ux * ext + nx * fo, bz0 = z2 + uz * ext + nz * fo, gap = 1.1;
+      const cxm = (ax0 + bx0) / 2, czm = (az0 + bz0) / 2;
+      if (clearSpot(ax0, az0, .2) && clearSpot(bx0, bz0, .2)) { fence(ax0, az0, cxm - ux * gap, czm - uz * gap, row); fence(cxm + ux * gap, czm + uz * gap, bx0, bz0, row); }
+    }
+    // bins at the curb on trash day
+    if (h > .45) { const bx = mx + nx * (yard + 2.2) + ux * (L * .3), bz = mz + nz * (yard + 2.2) + uz * (L * .3); for (let k = 0; k < (h > .8 ? 3 : 2); k++) bins.push([bx + ux * k * .8, bz + uz * k * .8, Math.atan2(nx, nz), k]); }
+    // a car in the driveway beside the house
+    if (h > .3 && h < .85 && yard > 3.6) { const side = h > .55 ? 1 : -1, cx = mx + ux * side * Math.max(0, L / 2 - 2.6) + nx * (yard * .5 + .3), cz = mz + uz * side * Math.max(0, L / 2 - 2.6) + nz * (yard * .5 + .3); const lx = yard > 6 ? nx : ux, lz = yard > 6 ? nz : uz; let ok = !inB(cx, cz) && !inB(cx + lx * 2.4, cz + lz * 2.4) && !inB(cx - lx * 2.4, cz - lz * 2.4); if (ok) forSegs(cx, cz, 12, id => { if (segDist(cx, cz, id)[0] < WHW[segW[id]] + 2.6) ok = false; }); if (ok) cars[h > .6 ? 1 : 0].push([cx, cz, yard > 6 ? Math.atan2(-nx, -nz) : Math.atan2(ux, uz), (h * 997 | 0) % PARKED_COLS.length]); }
+  }
+  if (P.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); g.computeVertexNormals(); const m = new THREE.Mesh(g, fenceTex()); m.matrixAutoUpdate = false; group.add(m); }
+  const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S1 = new THREE.Vector3(1, 1, 1), YA = new THREE.Vector3(0, 1, 0);
+  if (bins.length) { fenceTex(); const im = new THREE.InstancedMesh(binGeo, binMat, bins.length); bins.forEach(([x, z, a, k], n) => { Q.setFromAxisAngle(YA, a); M4.compose(V.set(x, H(x, z), z), Q, S1); im.setMatrixAt(n, M4); im.setColorAt(n, BIN_COLS[k % 3]); }); group.add(im); }
+  if (trafficMesh) cars.forEach((list, k) => { if (!list.length) return; const im = new THREE.InstancedMesh(carGeo(k), trafficMesh[0].material, list.length); list.forEach(([x, z, a, c], n) => { Q.setFromAxisAngle(YA, a); M4.compose(V.set(x, H(x, z) + .02, z), Q, S1); im.setMatrixAt(n, M4); im.setColorAt(n, PARKED_COLS[c]); }); im.castShadow = true; im.frustumCulled = false; group.add(im); });
+}
+
 /* ---------------- geometry builder ---------------- */
 class GB {
   constructor() { this.p = []; this.n = []; this.u = []; this.c = []; this.i = []; }
@@ -2533,7 +2747,8 @@ function addBuilding(gb, b, rnd) {
   for (let i = 0; i < n; i++) { ys[i] = H(pts[i * 2], pts[i * 2 + 1]); if (ys[i] < minY) minY = ys[i]; if (ys[i] > maxY) maxY = ys[i]; }
   const base = minY - .4, top = maxY + b.h, hsh = hashf(pts[0], pts[1]);
   const tall = b.h > 13 && kind !== 8 && kind !== 7 && !brand;
-  const tint = kind === 0 || kind === 1 ? HOUSE_COLS[(hsh * HOUSE_COLS.length) | 0] : kind === 5 ? WHITE : COM_COLS[(hsh * COM_COLS.length) | 0];
+  const hst = houseStyleFor(hashf(pts[0], pts[1]));
+  const tint = kind === 0 ? hex3(hst.wall) : kind === 1 ? HOUSE_COLS[(hsh * HOUSE_COLS.length) | 0] : kind === 5 ? WHITE : COM_COLS[(hsh * COM_COLS.length) | 0];
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n, x1 = pts[i * 2], z1 = pts[i * 2 + 1], x2 = pts[j * 2], z2 = pts[j * 2 + 1];
     const ex = x2 - x1, ez = z2 - z1, L = Math.hypot(ex, ez); if (L < .3) continue;
@@ -2541,7 +2756,7 @@ function addBuilding(gb, b, rnd) {
     const eBase = Math.max(ys[i], ys[j]);
     let cell = C.stucco, col = tint, segW = 1e9, rowH = 0, band = 0, upper = C.stucco;
     if (tall) { cell = kind === 2 ? C.aptSide : C.office; segW = 14; rowH = kind === 2 ? 9.6 : 19; col = kind === 2 ? tint : WHITE; }
-    else if (kind === 0) { if (front && L > 5) { cell = C.house + ((hsh * 6) | 0); col = tint; } }
+    else if (kind === 0) { if (front && L > 5) { cell = hst.cell; col = WHITE; } }
     else if (kind === 1) { if (front && L > 4) cell = C.garage; }
     else if (kind === 2) { cell = front ? C.apt + ((hsh * 2) | 0) : C.aptSide; segW = 12; rowH = 9.6; }
     else if (kind === 3) {
@@ -2577,7 +2792,7 @@ function addBuilding(gb, b, rnd) {
   for (let i = 0; i < n; i++) { const j = (i + 1) % n, k = (i + 2) % n; area += pts[i * 2] * pts[j * 2 + 1] - pts[j * 2] * pts[i * 2 + 1]; cxs += pts[i * 2]; czs += pts[i * 2 + 1]; const cr = (pts[j * 2] - pts[i * 2]) * (pts[k * 2 + 1] - pts[j * 2 + 1]) - (pts[j * 2 + 1] - pts[i * 2 + 1]) * (pts[k * 2] - pts[j * 2]); if (cr < -1e-6) convex = false; }
   area = Math.abs(area / 2);
   if ((kind === 0 || kind === 2 && !tall) && convex && n <= 8 && area < 450) {
-    const ax = cxs / n, az = czs / n, rh = kind === 0 ? 1.8 : 2.2, cell = hsh < .55 ? C.tile : C.shingle, uv = cellUV(cell);
+    const ax = cxs / n, az = czs / n, rh = kind === 0 ? 1.8 : 2.2, cell = kind === 0 ? (hst.roof === 'tile' ? C.tile : C.shingle) : hsh < .55 ? C.tile : C.shingle, uv = cellUV(cell);
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n, x1 = pts[i * 2], z1 = pts[i * 2 + 1], x2 = pts[j * 2], z2 = pts[j * 2 + 1];
       // slight overhang
@@ -2646,6 +2861,7 @@ function genChunk(cx, cz) {
   inst(lampHeadGeo, lampHeadMat, lamps, ([x, z, a]) => { Q.setFromAxisAngle(YA, a); M4.compose(V.set(x, H(x, z), z), Q, SV.set(1, 1, 1)); });
   inst(utilPoleGeo, utilPoleMat, poles, ([x, z, a]) => { Q.setFromAxisAngle(YA, a); M4.compose(V.set(x, H(x, z) - .1, z), Q, SV.set(1, 1, 1)); });
   inst(hydrantGeo, hydrantMat, hydrants, ([x, z]) => { Q.identity(); M4.compose(V.set(x, H(x, z) - .05, z), Q, SV.set(1, 1, 1)); });
+  houseYards(blds, clearSpot, group, rnd, (x, z) => inBuilding(x, z, 0));
   const signMat = buildSigns(cx, cz, clearSpot, group); chunkBillboards(cx, cz, clearSpot, group);
   if (wires.length) { const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(wires, 3)); const ln = new THREE.LineSegments(wg, wireMat); ln.frustumCulled = false; group.add(ln); }
   const sh = stops.filter(s => s[3]);
@@ -3260,7 +3476,7 @@ const WORD_LINES = {
   'CLINIC': ['Doctor\'s appointment.', 'Clinic, please.'], 'BANK': ['Gotta hit the bank.', 'Bank before it closes.'], 'CAFE': ['Coffee. Please.', 'Meeting someone at the cafe.']
 };
 function buildDests() {
-  const L = PLACES.lm;
+  const L = PLACES.lm; L.wahgwaan = [3929, -2071];
   const lm = [
     ['Leimert Park', 'leimert', ['Drop me at the Village. Drum circle already going.', 'Leimert. I got a show at the park.']],
     ['KBLA Talk 1580', 'kbla', ['KBLA. I\'m on the air in fifteen.', 'Take me to the station on Crenshaw.']],
@@ -3290,6 +3506,7 @@ function buildDests() {
     ['Ralphs, Obama Blvd', 'ralphs_obama', ['Ralphs on Obama.', 'Grocery run.']],
     ['Dockweiler Beach', 'dockweiler', ['Dockweiler. Bonfire tonight.', 'The beach by the planes.']],
     ['Marina del Rey', 'marina', ['The Marina. Boat party.', 'Dinner on the water.']],
+    ['Wah Gwaan, Crenshaw & Vernon', 'wahgwaan', ['Wah Gwaan. Oxtail and rice and peas, let\'s go.', 'The Jamaican spot on Crenshaw and Vernon.']],
     ['LA Memorial Coliseum', 'coliseum', ['The Coliseum, Exposition Park.', 'USC game. Fight on!']]
   ];
   LM_DESTS = lm.filter(([, k]) => L[k]).map(([name, k, lines]) => ({ name, x: L[k][0], z: L[k][1], lines, lm: true })).concat(LAX_TERMS);
@@ -3309,7 +3526,7 @@ function buildDests() {
   const BRAND_AT = { kbla: 'kbla', pet: 'pet', pollo: 'pollo', taco_mell: 'tacomell', gorilla: 'gorilla', dulans: 'dulans', fatburger: 'fatburger', marathon: 'marathon', slauson_mall: 'slauson_mall', louisiana: 'louisiana', roscoes: 'roscoes', earles: 'earles' };
   LM_SIGNS = [['albertsons', 'MARKET'], ['sprouts', 'MARKET'], ['bhc_plaza', 'PLAZA'], ['fox_hills', 'MALL']].filter(([k]) => L[k]).map(([k, w]) => [L[k][0], L[k][1], SIGN_WORDS.indexOf(w)])
     .concat(Object.keys(BRAND_AT).filter(k => L[k]).map(k => [L[k][0], L[k][1], BRANDS[BRAND_AT[k]].front]))
-    .concat([[3994.4, -2145.4, BC.artprac], [4022, -2165, BC.vision]]);
+    .concat([[3994.4, -2145.4, BC.artprac], [4022, -2165, BC.vision], [3929, -2071, BC.wahgwaan], [3960, -2032, BC.bank]]);
   mapBrandBuildings();
 }
 
