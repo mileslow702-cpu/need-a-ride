@@ -1518,6 +1518,29 @@ function nowPlaying() {
   const r = $('r-np'); if (r) r.textContent = t;
 }
 
+/* ---------------- Do Better Arcade: this player on the North Star sheet ----------------
+   Every update is saved on the device first and only cleared once the sheet confirms it, so nothing is lost offline. */
+const DBA = {
+  url: 'https://northstargame.vercel.app/api/arcade', key: 'dba_outbox_v1', game: 'need-a-ride', busy: false, last: 0,
+  q() { try { return JSON.parse(localStorage.getItem(this.key) || '[]'); } catch (e) { return []; } },
+  keep(q) { try { localStorage.setItem(this.key, JSON.stringify(q.slice(-30))); } catch (e) { } },
+  log(rec) { this.last = Date.now(); rec = Object.assign({ game: this.game, lastSeen: Date.now() }, rec); this.keep(this.q().filter(x => x.email !== rec.email).concat(rec)); this.flush(); },
+  flush() {
+    const q = this.q(); if (!q.length || this.busy) return; this.busy = true;
+    fetch(this.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: q }), keepalive: true })
+      .then(r => { if (r.ok || r.status === 400) { const sent = new Set(q.map(x => x.email + x.lastSeen)); this.keep(this.q().filter(x => !sent.has(x.email + x.lastSeen))); } })
+      .catch(() => { }).finally(() => { this.busy = false; });
+  },
+};
+function arcadeLog(d) {
+  if (!SAVE.email) return;
+  d = d || SAVE.data || {};
+  DBA.log({ email: SAVE.email, visits: G.sessions || 1, minutes: Math.round((G.playSec || 0) / 6) / 10, firstSeen: d.firstSeen,
+    progress: `${d.rides || G.rides || 0} rides · $${Math.round(store.get('career', 0)).toLocaleString()} career` });
+}
+setInterval(() => DBA.flush(), 60000);
+addEventListener('pagehide', () => arcadeLog());
+
 /* ---------------- sign-in with email + automatic saves ---------------- */
 const SAVE = { email: '', data: null };
 function cleanEmail(e) { return String(e || '').trim().toLowerCase(); }
@@ -1535,6 +1558,7 @@ function saveProgress() {
   SAVE.data = d;
   try { localStorage.setItem('nar_save_' + SAVE.email, JSON.stringify(d)); } catch (e) { }
   try { fetch('api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: SAVE.email, data: d }), keepalive: true }).catch(() => { }); } catch (e) { }
+  if (Date.now() - DBA.last > 180000) arcadeLog(d);   // the sheet gets an update every few minutes of play
 }
 function applySave(d) {
   if (!d) return;
@@ -1557,6 +1581,7 @@ async function submitGate(ev) {
   G.playSec = (SAVE.data && SAVE.data.playMin || 0) * 60; G.sessions = (SAVE.data && SAVE.data.sessions || 0) + 1;
   $('welcome').textContent = SAVE.data && SAVE.data.rides ? `Welcome back. $${Math.round(SAVE.data.money || 0)} and ${SAVE.data.rides} rides so far.` : '';
   if (!SAVE.data) saveFirst(email);
+  arcadeLog();
   $('gate').hidden = true; $('menu').hidden = false; G.state = 'menu'; refreshMenu();
 }
 function saveFirst(email) { try { fetch('api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, data: { email, t: Date.now(), career: 0, money: 0, rides: 0, tips: 0, fuel: 1, car: G.car, driver: G.driver, clock: null, isNew: true } }), keepalive: true }).catch(() => { }); } catch (e) { } }
