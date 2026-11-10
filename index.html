@@ -438,8 +438,10 @@ const loadStep = async (pct, msg) => { $('loadbar').style.width = pct + '%'; $('
 
 /* ---------------- renderer + scene ---------------- */
 const canvas = $('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.25 : 1.5));
+// Graphics HIGH smooths edges in its own off-screen picture, so the screen itself only needs smoothing in FAST mode (doing both doubled the work)
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH && store.get('gfx', 'high') === 'fast', logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
+const PR_MAX = Math.min(devicePixelRatio, IS_TOUCH ? 1.25 : 1.5);
+renderer.setPixelRatio(PR_MAX);
 renderer.shadowMap.enabled = !IS_TOUCH;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
@@ -3619,7 +3621,7 @@ function fxInit() {
           gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0); }` });
     FX.quad = new THREE.Mesh(tri, FX.comp); FX.quad.frustumCulled = false; FX.scene.add(FX.quad);
     renderer.info.autoReset = false;
-    FX.ready = true;
+    FX.ready = true; aqApply();
   } catch (e) { FX.ready = false; }
   fxButtons();
 }
@@ -3630,7 +3632,29 @@ function fxSize() {
   FX.bright.uniforms.px.value.set(1 / w, 1 / h);
 }
 function fxPass(mat, target) { FX.quad.material = mat; renderer.setRenderTarget(target); renderer.render(FX.scene, FX.cam); }
+// Auto quality: watch the real frame rate while driving. If frames take longer than ~21 ms (under ~48 fps),
+// draw at a slightly lower resolution and lighter edge smoothing; if it runs smooth for a while, step back up.
+// The level a computer settles on is remembered, so the next session starts there.
+const AQ_LEVELS = [[1, 4], [.85, 4], [.74, 2], [.64, 2]];
+const AQ = { L: Math.max(0, store.get('aqL', 0) - 1), floor: 0, sum: 0, n: 0, last: 0, good: 0, raisedAt: -1e9 };
+function aqApply() {
+  const [sc, ms] = AQ_LEVELS[AQ.L];
+  renderer.setPixelRatio(Math.max(.5, PR_MAX * sc)); resize();
+  if (FX.rt && FX.rt.samples !== undefined && FX.rt.samples !== ms) { FX.rt.dispose(); FX.rt.samples = ms; FX.w = 0; }
+}
+function aqTick() {
+  const now = performance.now(), d = now - (AQ.last || now); AQ.last = now;
+  if (G.state !== 'play' || d <= 0 || d > 250) { AQ.sum = AQ.n = 0; return; }   // menus, pauses and hidden tabs don't count
+  AQ.sum += d; AQ.n++; if (AQ.sum < 1000) return;
+  const avg = AQ.sum / AQ.n; AQ.sum = AQ.n = 0;
+  if (avg > 21 && AQ.L < AQ_LEVELS.length - 1) {
+    if (now - AQ.raisedAt < 8000) AQ.floor = AQ.L + 1;      // stepping up didn't hold: stay at this level from now on
+    AQ.L++; AQ.good = 0; store.set('aqL', AQ.L); aqApply();
+  } else if (avg < 17.6) { if (++AQ.good >= 6 && AQ.L > AQ.floor) { AQ.L--; AQ.good = 0; AQ.raisedAt = now; aqApply(); } }
+  else AQ.good = 0;
+}
 function drawFrame() {
+  aqTick();
   renderer.info.reset();
   if (!FX.ready || !FX.on) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
   fxSize();
@@ -5793,7 +5817,7 @@ function pauseShift() {
 function resumeShift() { applySwap(); G.state = 'play'; $('results').hidden = true; $('hud').hidden = false; $('touch').hidden = !IS_TOUCH; resize(); last = performance.now(); }
 function tick() {
   requestAnimationFrame(tick);
-  const now = performance.now(); let dt = Math.min(.05, (now - last) / 1000); last = now;
+  const now = performance.now(); let dt = Math.max(0, Math.min(.05, (now - last) / 1000)); last = now;
   if (G.state === 'menu') { menuFrame(dt); return; }
   if (G.state === 'paused') { drawFrame(); return; }
   if (G.state !== 'play') return;
